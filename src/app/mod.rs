@@ -29,6 +29,7 @@ use winit::{
 };
 
 use crate::{
+    UserEvent,
     constants::{APP_ID, APP_NAME, WINDOW_SIZE},
     shared::{
         GL_CONTEXT, GL_SURFACE,
@@ -141,7 +142,7 @@ impl Drop for App {
     }
 }
 
-impl ApplicationHandler for App {
+impl ApplicationHandler<UserEvent> for App {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         let window_attributes = WindowAttributes::default()
             .with_title(APP_NAME)
@@ -237,6 +238,14 @@ impl ApplicationHandler for App {
                 event_loop.exit();
             }
             _ => (),
+        }
+    }
+
+    fn user_event(&mut self, event_loop: &ActiveEventLoop, event: UserEvent) {
+        match event {
+            UserEvent::Quit => {
+                event_loop.exit();
+            }
         }
     }
 }

@@ -5,6 +5,7 @@ mod ipc;
 mod player;
 mod server;
 mod shared;
+mod tray;
 mod webview;
 
 use app::{App, AppEvent};
@@ -17,15 +18,23 @@ use glutin::{
 use instance::{Instance, InstanceEvent};
 use ipc::{IpcEvent, IpcEventMpv};
 use player::{Player, PlayerEvent};
+use rust_i18n::i18n;
 use server::Server;
 use shared::{drop_gl, drop_renderer, with_gl, with_renderer_read, with_renderer_write};
 use std::{fs, num::NonZeroU32, process::ExitCode, rc::Rc, time::Duration};
 use tracing::warn;
+use tray::{Tray, TrayEvent};
 use webview::{WebView, WebViewEvent};
 use winit::{
     event_loop::{ControlFlow, EventLoop},
     platform::pump_events::{EventLoopExtPumpEvents, PumpStatus},
 };
+
+i18n!("locales", fallback = "en");
+
+enum UserEvent {
+    Quit,
+}
 
 #[derive(Parser, Debug)]
 #[command(version, ignore_errors(true))]
@@ -76,11 +85,16 @@ fn main() -> ExitCode {
         server.start(args.dev).expect("Failed to start server");
     }
 
+    let tray = Tray::new();
     let mut app = App::new();
     let mut player = Player::new();
 
-    let mut event_loop = EventLoop::new().expect("Failed to create event loop");
+    let mut event_loop = EventLoop::<UserEvent>::with_user_event()
+        .build()
+        .expect("Failed to create event loop");
     event_loop.set_control_flow(ControlFlow::Poll);
+
+    let event_loop_proxy = event_loop.create_proxy();
 
     let mut needs_redraw = false;
 
@@ -185,6 +199,12 @@ fn main() -> ExitCode {
             }
             AppEvent::KeyboardInput((key_event, modifiers)) => {
                 webview.keyboard_input(key_event, modifiers);
+            }
+        });
+
+        tray.events(|event| match event {
+            TrayEvent::Quit => {
+                event_loop_proxy.send_event(UserEvent::Quit).ok();
             }
         });
 

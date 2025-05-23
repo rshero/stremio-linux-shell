@@ -11,6 +11,7 @@ use std::{
 use constants::{BOOL_PROPERTIES, FLOAT_PROPERTIES, STRING_PROPERTIES};
 use glutin::{display::Display, prelude::GlDisplay};
 use itertools::Itertools;
+use libc::{LC_NUMERIC, setlocale};
 use libmpv2::{
     Format, Mpv,
     events::{Event, EventContext, PropertyData},
@@ -140,6 +141,11 @@ pub struct Player {
 
 impl Player {
     pub fn new() -> Self {
+        // Required for libmpv to work alongside gtk
+        unsafe {
+            setlocale(LC_NUMERIC, c"C".as_ptr());
+        }
+
         let log = env::var("RUST_LOG");
         let msg_level = match log {
             Ok(scope) => &format!("all={}", scope.as_str()),

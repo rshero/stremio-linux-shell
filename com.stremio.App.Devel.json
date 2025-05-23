@@ -31,7 +31,8 @@
         "--filesystem=xdg-run/stremio:create",
         "--env=LD_LIBRARY_PATH=/app/lib/:/app/lib64/:/app/share/stremio",
         "--system-talk-name=org.freedesktop.systemd1",
-        "--system-talk-name=org.freedesktop.UPower"
+        "--system-talk-name=org.freedesktop.UPower",
+        "--talk-name=org.kde.StatusNotifierWatcher"
     ],
     "build-options": {
         "append-path": "/usr/lib/sdk/rust-stable/bin",
@@ -166,6 +167,7 @@
                     "sha256": "dafe2e8f82cb97de1bd10db9e2ec4c07bbf53389b0799b1e095a918951e78fd4"
                 }
             ]
-        }
+        },
+        "flatpak/shared-modules/libappindicator/libappindicator-gtk3-12.10.json"
     ]
 }
