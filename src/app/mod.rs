@@ -3,10 +3,7 @@ mod utils;
 
 use std::{
     ffi::CString,
-    sync::{
-        Mutex,
-        mpsc::{Receiver, Sender, channel},
-    },
+    sync::mpsc::{Receiver, Sender, channel},
 };
 
 use ashpd::{WindowIdentifier, desktop::open_uri};
@@ -29,20 +26,22 @@ use winit::{
 };
 
 use crate::{
-    UserEvent,
     constants::{APP_ID, APP_NAME, WINDOW_SIZE},
     shared::{
-        GL_CONTEXT, GL_SURFACE,
-        types::{Cursor, MouseState, WindowSize},
+        self,
+        types::{Cursor, MouseState, UserEvent, WindowSize},
     },
 };
 
 const CONTEXT_API: ContextApi = ContextApi::OpenGl(Some(Version::new(3, 3)));
 
+#[derive(Debug)]
 pub enum AppEvent {
+    Init,
     Ready,
     Resized(WindowSize),
     Focused(bool),
+    Visibility(bool),
     Minimized(bool),
     Fullscreen(bool),
     MouseMoved(MouseState),
@@ -75,6 +74,44 @@ impl App {
 
     pub fn events<T: FnMut(AppEvent)>(&self, handler: T) {
         self.receiver.try_iter().for_each(handler);
+    }
+
+    pub fn create_window(&mut self, event_loop: &ActiveEventLoop) {
+        let window_attributes = WindowAttributes::default()
+            .with_title(APP_NAME)
+            .with_name(APP_ID, APP_ID)
+            .with_decorations(true)
+            .with_resizable(true)
+            .with_min_inner_size(PhysicalSize::new(900, 600))
+            .with_inner_size(PhysicalSize::<u32>::from(WINDOW_SIZE));
+
+        let (window, config) = utils::create_window(event_loop, window_attributes);
+        let surface = utils::create_surface(&config, &window);
+        let context = utils::create_context(&config, CONTEXT_API);
+
+        gl::load_with(|name| {
+            let name = CString::new(name).unwrap();
+            context.display().get_proc_address(&name) as _
+        });
+
+        self.window = window;
+        self.sender.send(AppEvent::Visibility(true)).ok();
+
+        shared::create_gl(surface, context);
+        shared::with_gl(|_, _| {
+            let refresh_rate = self.get_refresh_rate();
+            shared::create_renderer(WINDOW_SIZE, refresh_rate);
+        });
+
+        self.sender.send(AppEvent::Ready).ok();
+    }
+
+    pub fn destroy_window(&mut self) {
+        shared::drop_renderer();
+        shared::drop_gl();
+
+        self.window.take();
+        self.sender.send(AppEvent::Visibility(false)).ok();
     }
 
     pub fn set_cursor(&self, cursor: Cursor) {
@@ -144,34 +181,13 @@ impl Drop for App {
 
 impl ApplicationHandler<UserEvent> for App {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
-        let window_attributes = WindowAttributes::default()
-            .with_title(APP_NAME)
-            .with_name(APP_ID, APP_ID)
-            .with_decorations(true)
-            .with_resizable(true)
-            .with_min_inner_size(PhysicalSize::new(900, 600))
-            .with_inner_size(PhysicalSize::<u32>::from(WINDOW_SIZE));
-
-        let (window, config) = utils::create_window(event_loop, window_attributes);
-        let surface = utils::create_surface(&config, &window);
-        let context = utils::create_context(&config, CONTEXT_API);
-
-        gl::load_with(|name| {
-            let name = CString::new(name).unwrap();
-            context.display().get_proc_address(&name) as *const _
-        });
-
-        GL_CONTEXT.get_or_init(|| Mutex::new(Some(context)));
-        GL_SURFACE.get_or_init(|| Mutex::new(Some(surface)));
-
-        self.window = window;
-
-        self.sender.send(AppEvent::Ready).ok();
+        self.create_window(event_loop);
+        self.sender.send(AppEvent::Init).ok();
     }
 
     fn window_event(
         &mut self,
-        event_loop: &ActiveEventLoop,
+        _event_loop: &ActiveEventLoop,
         _window_id: winit::window::WindowId,
         event: winit::event::WindowEvent,
     ) {
@@ -235,7 +251,7 @@ impl ApplicationHandler<UserEvent> for App {
                 }
             }
             WindowEvent::CloseRequested => {
-                event_loop.exit();
+                self.destroy_window();
             }
             _ => (),
         }
@@ -243,6 +259,12 @@ impl ApplicationHandler<UserEvent> for App {
 
     fn user_event(&mut self, event_loop: &ActiveEventLoop, event: UserEvent) {
         match event {
+            UserEvent::Show => {
+                self.create_window(event_loop);
+            }
+            UserEvent::Hide => {
+                self.destroy_window();
+            }
             UserEvent::Quit => {
                 event_loop.exit();
             }

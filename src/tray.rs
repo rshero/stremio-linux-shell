@@ -1,30 +1,36 @@
 use std::{
-    sync::mpsc::{Receiver, channel},
+    sync::mpsc::{Receiver, Sender, channel},
     thread,
+    time::Duration,
 };
 
+use gtk::glib;
 use rust_i18n::t;
 use tray_icon::{
     Icon, TrayIcon, TrayIconBuilder,
     menu::{Menu, MenuEvent, MenuItem},
 };
 
+use crate::shared::types::UserEvent;
+
 const ICON: &[u8] = include_bytes!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/data/icons/symbolic.png"
 ));
 
-pub enum TrayEvent {
-    Quit,
+enum TrayEvent {
+    Visibility(bool),
 }
 
 pub struct Tray {
-    receiver: Receiver<TrayEvent>,
+    receiver: Receiver<UserEvent>,
+    tray_sender: Sender<TrayEvent>,
 }
 
 impl Tray {
     pub fn new() -> Self {
-        let (sender, receiver) = channel::<TrayEvent>();
+        let (sender, receiver) = channel::<UserEvent>();
+        let (tray_sender, tray_receiver) = channel::<TrayEvent>();
 
         thread::spawn(|| {
             gtk::init().expect("Failed to initialize gtk");
@@ -34,44 +40,93 @@ impl Tray {
                 rust_i18n::set_locale(&language.to_str());
             }
 
-            let _tray = Tray::create();
+            let menu = Self::create_menu();
+            let tray = Self::create(menu);
+
+            glib::timeout_add_local(Duration::from_millis(16), move || {
+                tray_receiver.try_iter().for_each(|event| match event {
+                    TrayEvent::Visibility(state) => {
+                        let menu = Self::create_menu();
+                        menu.remove_at(0);
+
+                        if state {
+                            let hide_item = Self::create_menu_item("hide");
+                            menu.prepend(&hide_item).ok();
+                        } else {
+                            let show_item = Self::create_menu_item("show");
+                            menu.prepend(&show_item).ok();
+                        }
+
+                        tray.set_menu(Some(menu));
+                    }
+                });
+
+                glib::ControlFlow::Continue
+            });
 
             gtk::main();
         });
 
-        let menu_sender = sender.clone();
-        MenuEvent::set_event_handler(Some(move |_| {
-            menu_sender.send(TrayEvent::Quit).ok();
+        MenuEvent::set_event_handler(Some(move |event: MenuEvent| {
+            if event.id == "hide" {
+                sender.send(UserEvent::Hide).ok();
+            }
+
+            if event.id == "show" {
+                sender.send(UserEvent::Show).ok();
+            }
+
+            if event.id == "quit" {
+                sender.send(UserEvent::Quit).ok();
+            }
         }));
 
-        Self { receiver }
+        Self {
+            receiver,
+            tray_sender,
+        }
     }
 
-    fn create() -> TrayIcon {
-        let quit_item = MenuItem::new(t!("quit"), true, None);
+    fn create_menu_item(id: &str) -> MenuItem {
+        MenuItem::with_id(id, t!(id), true, None)
+    }
+
+    fn create_menu() -> Box<Menu> {
+        let empty_item = Self::create_menu_item("");
+        let quit_item = Self::create_menu_item("quit");
 
         let version_label = format!("v{}", env!("CARGO_PKG_VERSION"));
         let version_item = MenuItem::new(version_label.as_str(), false, None);
 
         let menu = Menu::new();
-        menu.append_items(&[&quit_item, &version_item])
+        menu.append_items(&[&empty_item, &quit_item, &version_item])
             .expect("Failed to append menu items");
 
+        Box::new(menu)
+    }
+
+    fn create(menu: Box<Menu>) -> TrayIcon {
         let icon = load_icon(ICON);
 
         TrayIconBuilder::new()
-            .with_menu(Box::new(menu))
+            .with_menu(menu)
             .with_icon(icon)
             .build()
             .expect("Failed to build tray icon")
     }
 
-    pub fn events<F: FnMut(TrayEvent)>(&self, handler: F) {
+    pub fn update(&self, visibility: bool) {
+        self.tray_sender
+            .send(TrayEvent::Visibility(visibility))
+            .ok();
+    }
+
+    pub fn events<F: FnMut(UserEvent)>(&self, handler: F) {
         self.receiver.try_iter().for_each(handler);
     }
 }
 
-fn load_icon(buffer: &[u8]) -> tray_icon::Icon {
+fn load_icon(buffer: &[u8]) -> Icon {
     let (icon_rgba, icon_width, icon_height) = {
         let image = image::load_from_memory(buffer)
             .expect("Failed to open icon path")
