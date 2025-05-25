@@ -3,13 +3,13 @@ mod utils;
 
 use std::{
     ffi::CString,
-    sync::{
-        Mutex,
-        mpsc::{Receiver, Sender, channel},
-    },
+    sync::mpsc::{Receiver, Sender, channel},
 };
 
-use ashpd::{WindowIdentifier, desktop::open_uri};
+use ashpd::{
+    WindowIdentifier,
+    desktop::{background::Background, open_uri::OpenFileRequest},
+};
 use glutin::{
     context::{ContextApi, Version},
     display::GetGlDisplay,
@@ -29,20 +29,22 @@ use winit::{
 };
 
 use crate::{
-    UserEvent,
     constants::{APP_ID, APP_NAME, WINDOW_SIZE},
     shared::{
-        GL_CONTEXT, GL_SURFACE,
-        types::{Cursor, MouseState, WindowSize},
+        self,
+        types::{Cursor, MouseState, UserEvent, WindowSize},
     },
 };
 
 const CONTEXT_API: ContextApi = ContextApi::OpenGl(Some(Version::new(3, 3)));
 
+#[derive(Debug)]
 pub enum AppEvent {
+    Init,
     Ready,
     Resized(WindowSize),
     Focused(bool),
+    Visibility(bool),
     Minimized(bool),
     Fullscreen(bool),
     MouseMoved(MouseState),
@@ -75,6 +77,44 @@ impl App {
 
     pub fn events<T: FnMut(AppEvent)>(&self, handler: T) {
         self.receiver.try_iter().for_each(handler);
+    }
+
+    pub fn create_window(&mut self, event_loop: &ActiveEventLoop) {
+        let window_attributes = WindowAttributes::default()
+            .with_title(APP_NAME)
+            .with_name(APP_ID, APP_ID)
+            .with_decorations(true)
+            .with_resizable(true)
+            .with_min_inner_size(PhysicalSize::new(900, 600))
+            .with_inner_size(PhysicalSize::<u32>::from(WINDOW_SIZE));
+
+        let (window, config) = utils::create_window(event_loop, window_attributes);
+        let surface = utils::create_surface(&config, &window);
+        let context = utils::create_context(&config, CONTEXT_API);
+
+        gl::load_with(|name| {
+            let name = CString::new(name).unwrap();
+            context.display().get_proc_address(&name) as _
+        });
+
+        self.window = window;
+        self.sender.send(AppEvent::Visibility(true)).ok();
+
+        shared::create_gl(surface, context);
+        shared::with_gl(|_, _| {
+            let refresh_rate = self.get_refresh_rate();
+            shared::create_renderer(WINDOW_SIZE, refresh_rate);
+        });
+
+        self.sender.send(AppEvent::Ready).ok();
+    }
+
+    pub fn destroy_window(&mut self) {
+        shared::drop_renderer();
+        shared::drop_gl();
+
+        self.window.take();
+        self.sender.send(AppEvent::Visibility(false)).ok();
     }
 
     pub fn set_cursor(&self, cursor: Cursor) {
@@ -113,26 +153,42 @@ impl App {
 
     pub async fn open_url<T: Into<String>>(&self, input: T) {
         if let Ok(url) = Url::parse(&input.into()) {
-            if let Some(window) = self.window.as_ref() {
-                if let (Ok(window), Ok(display)) = (window.window_handle(), window.display_handle())
-                {
-                    let window_handle = window.as_raw();
-                    let display_handle = display.as_raw();
-                    let window_identifier =
-                        WindowIdentifier::from_raw_handle(&window_handle, Some(&display_handle))
-                            .await;
+            if let Some(identifier) = self.window_identifier().await {
+                let request = OpenFileRequest::default().identifier(identifier);
 
-                    let request =
-                        open_uri::OpenFileRequest::default().identifier(window_identifier);
-
-                    request
-                        .send_uri(&url)
-                        .await
-                        .map_err(|e| error!("Failed to open uri: {e}"))
-                        .ok();
-                }
+                request
+                    .send_uri(&url)
+                    .await
+                    .map_err(|e| error!("Failed to open uri: {e}"))
+                    .ok();
             }
         }
+    }
+
+    async fn request_background(&self) {
+        if let Some(identifier) = self.window_identifier().await {
+            let request = Background::request().identifier(identifier);
+
+            request
+                .send()
+                .await
+                .map_err(|e| error!("Failed to set background mode: {e}"))
+                .ok();
+        }
+    }
+
+    async fn window_identifier(&self) -> Option<WindowIdentifier> {
+        if let Some(window) = self.window.as_ref() {
+            if let (Ok(window), Ok(display)) = (window.window_handle(), window.display_handle()) {
+                let window_handle = window.as_raw();
+                let display_handle = display.as_raw();
+
+                return WindowIdentifier::from_raw_handle(&window_handle, Some(&display_handle))
+                    .await;
+            }
+        }
+
+        None
     }
 }
 
@@ -144,34 +200,16 @@ impl Drop for App {
 
 impl ApplicationHandler<UserEvent> for App {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
-        let window_attributes = WindowAttributes::default()
-            .with_title(APP_NAME)
-            .with_name(APP_ID, APP_ID)
-            .with_decorations(true)
-            .with_resizable(true)
-            .with_min_inner_size(PhysicalSize::new(900, 600))
-            .with_inner_size(PhysicalSize::<u32>::from(WINDOW_SIZE));
+        self.create_window(event_loop);
 
-        let (window, config) = utils::create_window(event_loop, window_attributes);
-        let surface = utils::create_surface(&config, &window);
-        let context = utils::create_context(&config, CONTEXT_API);
+        futures::executor::block_on(self.request_background());
 
-        gl::load_with(|name| {
-            let name = CString::new(name).unwrap();
-            context.display().get_proc_address(&name) as *const _
-        });
-
-        GL_CONTEXT.get_or_init(|| Mutex::new(Some(context)));
-        GL_SURFACE.get_or_init(|| Mutex::new(Some(surface)));
-
-        self.window = window;
-
-        self.sender.send(AppEvent::Ready).ok();
+        self.sender.send(AppEvent::Init).ok();
     }
 
     fn window_event(
         &mut self,
-        event_loop: &ActiveEventLoop,
+        _event_loop: &ActiveEventLoop,
         _window_id: winit::window::WindowId,
         event: winit::event::WindowEvent,
     ) {
@@ -235,7 +273,7 @@ impl ApplicationHandler<UserEvent> for App {
                 }
             }
             WindowEvent::CloseRequested => {
-                event_loop.exit();
+                self.destroy_window();
             }
             _ => (),
         }
@@ -243,6 +281,12 @@ impl ApplicationHandler<UserEvent> for App {
 
     fn user_event(&mut self, event_loop: &ActiveEventLoop, event: UserEvent) {
         match event {
+            UserEvent::Show => {
+                self.create_window(event_loop);
+            }
+            UserEvent::Hide => {
+                self.destroy_window();
+            }
             UserEvent::Quit => {
                 event_loop.exit();
             }

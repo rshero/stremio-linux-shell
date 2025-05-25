@@ -17,8 +17,10 @@ pub enum IpcEventMpv {
 #[derive(Deserialize, Debug)]
 pub enum IpcEvent {
     Init(u64),
+    Quit,
     Fullscreen(bool),
     Minimized(bool),
+    Visibility(bool),
     OpenMedia(String),
     OpenExternal(String),
     Mpv(IpcEventMpv),
@@ -47,52 +49,58 @@ impl TryFrom<IpcMessageRequest> for IpcEvent {
                 Some(args) => {
                     let args: Vec<Value> = serde_json::from_value(args).expect("Invalid arguments");
                     let name = args.first().and_then(Value::as_str).ok_or("Invalid name")?;
-                    let data = args.get(1).cloned().ok_or("Missing data")?;
+                    let data = args.get(1).cloned();
 
-                    match name {
-                        "win-set-visibility" => {
-                            let data: IpcMessageRequestWinSetVisilibty =
-                                serde_json::from_value(data)
-                                    .expect("Invalid win-set-visibility object");
+                    match data {
+                        Some(data) => match name {
+                            "win-set-visibility" => {
+                                let data: IpcMessageRequestWinSetVisilibty =
+                                    serde_json::from_value(data)
+                                        .expect("Invalid win-set-visibility object");
 
-                            Ok(IpcEvent::Fullscreen(data.fullscreen))
-                        }
-                        "open-external" => {
-                            let data: String = serde_json::from_value(data)
-                                .expect("Invalid open-external argument");
-
-                            Ok(IpcEvent::OpenExternal(data))
-                        }
-                        "mpv-command" => {
-                            let data: Vec<String> = serde_json::from_value(data)
-                                .expect("Invalid mpv-command arguments");
-                            let name = data[0].clone();
-
-                            let mut args = vec![];
-                            for arg in data.iter().skip(1) {
-                                args.push(arg.clone());
+                                Ok(IpcEvent::Fullscreen(data.fullscreen))
                             }
+                            "open-external" => {
+                                let data: String = serde_json::from_value(data)
+                                    .expect("Invalid open-external argument");
 
-                            Ok(IpcEvent::Mpv(IpcEventMpv::Command((name, args))))
-                        }
-                        "mpv-observe-prop" => {
-                            let name = data.as_str().expect("Invalid mpv-observe-prop name");
-                            Ok(IpcEvent::Mpv(IpcEventMpv::Observe(name.to_owned())))
-                        }
-                        "mpv-set-prop" => {
-                            let key_value: Vec<Value> = serde_json::from_value(data)
-                                .expect("Invalid mpv-set-prop arguments");
+                                Ok(IpcEvent::OpenExternal(data))
+                            }
+                            "mpv-command" => {
+                                let data: Vec<String> = serde_json::from_value(data)
+                                    .expect("Invalid mpv-command arguments");
+                                let name = data[0].clone();
 
-                            let name = key_value[0]
-                                .as_str()
-                                .expect("Invalid mpv-set-prop name")
-                                .to_owned();
+                                let mut args = vec![];
+                                for arg in data.iter().skip(1) {
+                                    args.push(arg.clone());
+                                }
 
-                            let value = key_value.get(1).cloned();
+                                Ok(IpcEvent::Mpv(IpcEventMpv::Command((name, args))))
+                            }
+                            "mpv-observe-prop" => {
+                                let name = data.as_str().expect("Invalid mpv-observe-prop name");
+                                Ok(IpcEvent::Mpv(IpcEventMpv::Observe(name.to_owned())))
+                            }
+                            "mpv-set-prop" => {
+                                let key_value: Vec<Value> = serde_json::from_value(data)
+                                    .expect("Invalid mpv-set-prop arguments");
 
-                            Ok(IpcEvent::Mpv(IpcEventMpv::Set(MpvProperty(name, value))))
-                        }
-                        _ => Err("Unknown method"),
+                                let name = key_value[0]
+                                    .as_str()
+                                    .expect("Invalid mpv-set-prop name")
+                                    .to_owned();
+
+                                let value = key_value.get(1).cloned();
+
+                                Ok(IpcEvent::Mpv(IpcEventMpv::Set(MpvProperty(name, value))))
+                            }
+                            _ => Err("Unknown method"),
+                        },
+                        None => match name {
+                            "quit" => Ok(IpcEvent::Quit),
+                            _ => Err("Unknown method"),
+                        },
                     }
                 }
                 None => Err("Missing args"),
@@ -165,6 +173,20 @@ impl TryFrom<IpcEvent> for IpcMessageResponse {
                         "visible": true,
                         "visibility": 1,
                         "isFullscreen": state,
+                    }
+                ])),
+            }),
+            IpcEvent::Visibility(state) => Ok(IpcMessageResponse {
+                id: 1,
+                r#type: 1,
+                object: TRANSPORT_NAME.to_owned(),
+                data: None,
+                args: Some(json!([
+                    "win-visibility-changed",
+                    {
+                        "visible": state,
+                        "visibility": state as u32,
+                        "isFullscreen": false,
                     }
                 ])),
             }),

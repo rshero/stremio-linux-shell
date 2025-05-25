@@ -178,6 +178,8 @@ impl Player {
     }
 
     pub fn setup(&mut self, context: GLContext) {
+        self.render_context.take();
+
         fn get_proc_address(context: &GLContext, name: &str) -> *mut c_void {
             let procname = CString::new(name).unwrap();
             context.get_proc_address(procname.as_c_str()) as _

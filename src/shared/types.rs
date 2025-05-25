@@ -41,3 +41,9 @@ impl Default for MouseState {
         }
     }
 }
+
+pub enum UserEvent {
+    Show,
+    Hide,
+    Quit,
+}

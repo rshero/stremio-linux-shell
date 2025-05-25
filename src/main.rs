@@ -10,20 +10,16 @@ mod webview;
 
 use app::{App, AppEvent};
 use clap::Parser;
-use constants::{DATA_DIR, STARTUP_URL, URI_SCHEME, WINDOW_SIZE};
-use glutin::{
-    display::GetGlDisplay,
-    surface::{GlSurface, SwapInterval},
-};
+use constants::{DATA_DIR, STARTUP_URL, URI_SCHEME};
+use glutin::{display::GetGlDisplay, surface::GlSurface};
 use instance::{Instance, InstanceEvent};
 use ipc::{IpcEvent, IpcEventMpv};
 use player::{Player, PlayerEvent};
 use rust_i18n::i18n;
 use server::Server;
-use shared::{drop_gl, drop_renderer, with_gl, with_renderer_read, with_renderer_write};
+use shared::{types::UserEvent, with_gl, with_renderer_read, with_renderer_write};
 use std::{fs, num::NonZeroU32, process::ExitCode, rc::Rc, time::Duration};
-use tracing::warn;
-use tray::{Tray, TrayEvent};
+use tray::Tray;
 use webview::{WebView, WebViewEvent};
 use winit::{
     event_loop::{ControlFlow, EventLoop},
@@ -31,10 +27,6 @@ use winit::{
 };
 
 i18n!("locales", fallback = "en");
-
-enum UserEvent {
-    Quit,
-}
 
 #[derive(Parser, Debug)]
 #[command(version, ignore_errors(true))]
@@ -92,6 +84,7 @@ fn main() -> ExitCode {
     let mut event_loop = EventLoop::<UserEvent>::with_user_event()
         .build()
         .expect("Failed to create event loop");
+
     event_loop.set_control_flow(ControlFlow::Poll);
 
     let event_loop_proxy = event_loop.create_proxy();
@@ -110,8 +103,8 @@ fn main() -> ExitCode {
             server.stop().expect("Failed to stop server");
             webview.stop();
             instance.stop();
-            drop_renderer();
-            drop_gl();
+            shared::drop_renderer();
+            shared::drop_gl();
 
             break ExitCode::from(exit_code as u8);
         }
@@ -142,21 +135,18 @@ fn main() -> ExitCode {
             }
         });
 
+        tray.events(|event| {
+            event_loop_proxy.send_event(event).ok();
+        });
+
         app.events(|event| match event {
+            AppEvent::Init => {
+                webview.start();
+            }
             AppEvent::Ready => {
-                let refresh_rate = app.get_refresh_rate();
-
-                with_gl(|surface, context| {
-                    surface
-                        .set_swap_interval(context, SwapInterval::Wait(NonZeroU32::new(1).unwrap()))
-                        .map_err(|e| warn!("Failed to enable VSync: {e}"))
-                        .ok();
-
-                    shared::create_renderer(WINDOW_SIZE, refresh_rate);
+                shared::with_gl(|surface, _| {
                     player.setup(Rc::new(surface.display()));
                 });
-
-                webview.start();
             }
             AppEvent::Resized(size) => {
                 with_gl(|surface, context| {
@@ -176,6 +166,12 @@ fn main() -> ExitCode {
             }
             AppEvent::Focused(state) => {
                 webview.focused(state);
+            }
+            AppEvent::Visibility(visible) => {
+                let message = ipc::create_response(IpcEvent::Visibility(visible));
+                webview.post_message(message);
+
+                tray.update(visible);
             }
             AppEvent::Minimized(minimized) => {
                 let message = ipc::create_response(IpcEvent::Minimized(minimized));
@@ -199,12 +195,6 @@ fn main() -> ExitCode {
             }
             AppEvent::KeyboardInput((key_event, modifiers)) => {
                 webview.keyboard_input(key_event, modifiers);
-            }
-        });
-
-        tray.events(|event| match event {
-            TrayEvent::Quit => {
-                event_loop_proxy.send_event(UserEvent::Quit).ok();
             }
         });
 
@@ -245,6 +235,9 @@ fn main() -> ExitCode {
                 }
                 IpcEvent::OpenExternal(url) => {
                     futures::executor::block_on(app.open_url(url));
+                }
+                IpcEvent::Quit => {
+                    event_loop_proxy.send_event(UserEvent::Quit).ok();
                 }
                 IpcEvent::Mpv(event) => match event {
                     IpcEventMpv::Observe(name) => {
