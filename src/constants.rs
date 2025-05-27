@@ -1,4 +1,8 @@
-pub const APP_ID: &str = "com.stremio.App";
+pub const APP_ID: &str = match cfg!(debug_assertions) {
+    true => "com.stremio.App.Devel",
+    false => "com.stremio.App",
+};
+
 pub const APP_NAME: &str = "Stremio";
 pub const WINDOW_SIZE: (i32, i32) = (1700, 1050);
 pub const STARTUP_URL: &str = "https:/web.stremio.com";
