@@ -1,8 +1,3 @@
-pub const CEF_DIR: &str = "cef";
-pub const CEF_CACHE_DIR: &str = "cache";
-pub const CEF_LOG_FILE: &str = "log";
-pub const CEF_LOCK_FILE: &str = "SingletonLock";
-
 pub const PRELOAD_SCRIPT: &str = include_str!("preload.js");
 pub const IPC_SENDER: &str = "__postMessage";
 pub const IPC_RECEIVER: &str = "__onMessage";

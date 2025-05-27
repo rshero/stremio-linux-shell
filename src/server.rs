@@ -1,7 +1,5 @@
 use std::{
-    fs,
     io::{BufRead, BufReader},
-    path::{Path, PathBuf},
     process::{self, Child, Command},
     thread,
 };
@@ -11,7 +9,10 @@ use serde::Deserialize;
 use tracing::debug;
 use url::Url;
 
-use crate::constants::{SERVER_DOWNLOAD_ENDPOINT, SERVER_UPDATER_ENDPOINT};
+use crate::{
+    config::ServerConfig,
+    constants::{SERVER_DOWNLOAD_ENDPOINT, SERVER_UPDATER_ENDPOINT},
+};
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -20,19 +21,14 @@ struct ServerUpdaterResponse {
 }
 
 pub struct Server {
-    file_path: PathBuf,
-    version_path: PathBuf,
+    config: ServerConfig,
     process: Option<Child>,
 }
 
 impl Server {
-    pub fn new(data_path: &Path) -> Self {
-        let file_path = Path::new(data_path).join("server.js");
-        let version_path = Path::new(data_path).join("server_version");
-
+    pub fn new(config: ServerConfig) -> Self {
         Self {
-            file_path,
-            version_path,
+            config,
             process: None,
         }
     }
@@ -42,8 +38,7 @@ impl Server {
             .json::<ServerUpdaterResponse>()?
             .latest_version;
 
-        let should_download = fs::read_to_string(&self.version_path)
-            .map_or(true, |current_version| current_version != latest_version);
+        let should_download = self.config.version() != Some(latest_version.clone());
 
         if should_download {
             let download_url = Url::parse(
@@ -56,8 +51,12 @@ impl Server {
                 .bytes()
                 .context("Failed to fetch server file")?;
 
-            fs::write(&self.file_path, latest_file).context("Failed to write server file")?;
-            fs::write(&self.version_path, &latest_version)
+            self.config
+                .update_file(latest_file)
+                .context("Failed to write server file")?;
+
+            self.config
+                .update_version(latest_version)
                 .context("Failed to write version file")?;
         }
 
@@ -67,7 +66,7 @@ impl Server {
     pub fn start(&mut self, dev: bool) -> anyhow::Result<()> {
         let mut child = Command::new("node")
             .env("NO_CORS", (dev as i32).to_string())
-            .arg(self.file_path.as_os_str())
+            .arg(self.config.file.as_os_str())
             .stdout(process::Stdio::piped())
             .spawn()
             .context("Failed to start server")?;

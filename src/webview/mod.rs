@@ -3,11 +3,7 @@ mod app;
 mod cef_impl;
 mod constants;
 
-use std::{
-    fs,
-    path::Path,
-    sync::mpsc::{Receiver, Sender, channel},
-};
+use std::sync::mpsc::{Receiver, Sender, channel};
 
 use adapters::{NativeKeyCode, WindowsKeyCode};
 use app::WebViewApp;
@@ -20,7 +16,7 @@ use cef_dll_sys::{
     cef_event_flags_t, cef_key_event_type_t, cef_log_severity_t, cef_mouse_button_type_t,
     cef_paint_element_type_t, cef_pointer_type_t, cef_touch_event_type_t,
 };
-use constants::{CEF_CACHE_DIR, CEF_DIR, CEF_LOCK_FILE, CEF_LOG_FILE, IPC_SENDER};
+use constants::IPC_SENDER;
 use once_cell::sync::OnceCell;
 use url::Url;
 use winit::{
@@ -28,7 +24,10 @@ use winit::{
     keyboard::{ModifiersState, PhysicalKey},
 };
 
-use crate::shared::types::{Cursor, MouseState};
+use crate::{
+    config::WebViewConfig,
+    shared::types::{Cursor, MouseState},
+};
 
 static SENDER: OnceCell<Sender<WebViewEvent>> = OnceCell::new();
 static BROWSER: OnceCell<Browser> = OnceCell::new();
@@ -51,7 +50,7 @@ pub struct WebView {
 }
 
 impl WebView {
-    pub fn new(data_path: &Path) -> Self {
+    pub fn new(config: WebViewConfig) -> Self {
         let _ = api_hash(cef_dll_sys::CEF_API_VERSION_LAST, 0);
 
         let args = Args::new();
@@ -61,19 +60,14 @@ impl WebView {
 
         let app = WebViewApp::new();
 
-        let cache_path = data_path.join(CEF_DIR).join(CEF_CACHE_DIR);
-        let log_file = data_path.join(CEF_DIR).join(CEF_LOG_FILE);
-
-        // Remove lockfile
-        let lock_file = cache_path.join(CEF_LOCK_FILE);
-        let _ = fs::remove_file(&lock_file);
+        config.remove_lock_file();
 
         let settings = Settings {
             no_sandbox: 1,
             windowless_rendering_enabled: 1,
             multi_threaded_message_loop: 1,
-            cache_path: cache_path.to_str().unwrap().into(),
-            log_file: log_file.to_str().unwrap().into(),
+            cache_path: config.cache_dir.to_str().unwrap().into(),
+            log_file: config.log_file.to_str().unwrap().into(),
             log_severity: LogSeverity::from(cef_log_severity_t::LOGSEVERITY_VERBOSE),
             ..Default::default()
         };

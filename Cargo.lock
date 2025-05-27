@@ -3936,6 +3936,7 @@ version = "1.0.0-beta.6"
 dependencies = [
  "anyhow",
  "ashpd",
+ "bytes",
  "bzip2",
  "cef",
  "cef-dll-sys",

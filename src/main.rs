@@ -1,4 +1,5 @@
 mod app;
+mod config;
 mod constants;
 mod instance;
 mod ipc;
@@ -10,7 +11,8 @@ mod webview;
 
 use app::{App, AppEvent};
 use clap::Parser;
-use constants::{DATA_DIR, STARTUP_URL, URI_SCHEME};
+use config::Config;
+use constants::{STARTUP_URL, URI_SCHEME};
 use glutin::{display::GetGlDisplay, surface::GlSurface};
 use instance::{Instance, InstanceEvent};
 use ipc::{IpcEvent, IpcEventMpv};
@@ -18,7 +20,7 @@ use player::{Player, PlayerEvent};
 use rust_i18n::i18n;
 use server::Server;
 use shared::{types::UserEvent, with_gl, with_renderer_read, with_renderer_write};
-use std::{fs, num::NonZeroU32, process::ExitCode, rc::Rc, time::Duration};
+use std::{num::NonZeroU32, process::ExitCode, rc::Rc, time::Duration};
 use tray::Tray;
 use webview::{WebView, WebViewEvent};
 use winit::{
@@ -49,18 +51,14 @@ fn main() -> ExitCode {
     tracing_subscriber::fmt::init();
 
     let args = Args::parse();
+    let config = Config::new();
 
-    let data_path = dirs::data_dir()
-        .expect("Failed to get data dir")
-        .join(DATA_DIR);
-    fs::create_dir_all(&data_path).expect("Failed to create data directory");
-
-    let mut webview = WebView::new(&data_path);
+    let mut webview = WebView::new(config.webview);
     if webview.should_exit() {
         return ExitCode::SUCCESS;
     }
 
-    let instance = Instance::new();
+    let instance = Instance::new(config.instance);
     if instance.running() {
         if let Some(deeplink) = args.open {
             instance.send(deeplink);
@@ -71,7 +69,7 @@ fn main() -> ExitCode {
 
     instance.start();
 
-    let mut server = Server::new(&data_path);
+    let mut server = Server::new(config.server);
     if !args.no_server {
         server.setup().expect("Failed to setup server");
         server.start(args.dev).expect("Failed to start server");
