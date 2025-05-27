@@ -32,7 +32,8 @@
         "--env=LD_LIBRARY_PATH=/app/lib/:/app/lib64/:/app/share/stremio",
         "--system-talk-name=org.freedesktop.systemd1",
         "--system-talk-name=org.freedesktop.UPower",
-        "--talk-name=org.kde.StatusNotifierWatcher"
+        "--talk-name=org.kde.StatusNotifierWatcher",
+        "--talk-name=org.kde.kwalletd6"
     ],
     "build-options": {
         "append-path": "/usr/lib/sdk/rust-stable/bin",
