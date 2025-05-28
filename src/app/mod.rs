@@ -25,7 +25,7 @@ use winit::{
     keyboard::ModifiersState,
     platform::wayland::WindowAttributesExtWayland,
     raw_window_handle::{HasDisplayHandle, HasWindowHandle},
-    window::{CursorIcon, Fullscreen, Window, WindowAttributes},
+    window::{CursorIcon, Fullscreen, UserAttentionType, Window, WindowAttributes},
 };
 
 use crate::{
@@ -115,6 +115,12 @@ impl App {
 
         self.window.take();
         self.sender.send(AppEvent::Visibility(false)).ok();
+    }
+
+    pub fn notify(&self) {
+        if let Some(window) = self.window.as_ref() {
+            window.request_user_attention(Some(UserAttentionType::Informational));
+        }
     }
 
     pub fn set_cursor(&self, cursor: Cursor) {
@@ -281,6 +287,10 @@ impl ApplicationHandler<UserEvent> for App {
 
     fn user_event(&mut self, event_loop: &ActiveEventLoop, event: UserEvent) {
         match event {
+            UserEvent::Raise => match self.window.is_some() {
+                true => self.notify(),
+                false => self.create_window(event_loop),
+            },
             UserEvent::Show => {
                 self.create_window(event_loop);
             }

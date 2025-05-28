@@ -126,6 +126,8 @@ fn main() -> ExitCode {
 
         instance.events(|event| match event {
             InstanceEvent::Open(deeplink) => {
+                event_loop_proxy.send_event(UserEvent::Raise).ok();
+
                 if deeplink.starts_with(URI_SCHEME) {
                     let message = ipc::create_response(IpcEvent::OpenMedia(deeplink.to_string()));
                     webview.post_message(message);
