@@ -1,6 +1,6 @@
 #!/bin/sh
 
-package_id="com.stremio.App.Devel"
+package_id="com.stremio.Client.Devel"
 cwd="flatpak"
 
 python3 $cwd/flatpak-builder-tools/cargo/flatpak-cargo-generator.py Cargo.lock -o $cwd/cargo-sources.json
