@@ -100,6 +100,8 @@ impl Serialize for MpvProperty {
 
 #[derive(Debug)]
 pub enum PlayerEvent {
+    Start,
+    Stop,
     Update,
     PropertyChange(MpvProperty),
 }
@@ -109,6 +111,8 @@ impl<'a> TryFrom<Event<'a>> for PlayerEvent {
 
     fn try_from(value: Event<'a>) -> Result<Self, Self::Error> {
         match value {
+            Event::StartFile => Ok(PlayerEvent::Start),
+            Event::EndFile(_) => Ok(PlayerEvent::Stop),
             Event::PropertyChange { name, change, .. } => {
                 let property = match change {
                     PropertyData::Double(value) => MpvProperty(

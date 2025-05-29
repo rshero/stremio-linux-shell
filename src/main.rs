@@ -256,6 +256,12 @@ fn main() -> ExitCode {
         });
 
         player.events(|event| match event {
+            PlayerEvent::Start => {
+                futures::executor::block_on(app.disable_idling());
+            }
+            PlayerEvent::Stop => {
+                futures::executor::block_on(app.enable_idling());
+            }
             PlayerEvent::Update => {
                 needs_redraw = true;
             }

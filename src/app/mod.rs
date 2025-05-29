@@ -8,7 +8,13 @@ use std::{
 
 use ashpd::{
     WindowIdentifier,
-    desktop::{background::Background, open_uri::OpenFileRequest},
+    desktop::{
+        Request,
+        background::Background,
+        inhibit::{InhibitFlags, InhibitProxy},
+        open_uri::OpenFileRequest,
+    },
+    enumflags2::BitFlags,
 };
 use glutin::{
     context::{ContextApi, Version},
@@ -60,6 +66,7 @@ pub struct App {
     receiver: Receiver<AppEvent>,
     modifiers_state: ModifiersState,
     mouse_state: MouseState,
+    inhibit_request: Option<Request<()>>,
 }
 
 impl App {
@@ -72,6 +79,7 @@ impl App {
             receiver,
             modifiers_state: ModifiersState::empty(),
             mouse_state: MouseState::default(),
+            inhibit_request: None,
         }
     }
 
@@ -155,6 +163,33 @@ impl App {
         }
 
         30
+    }
+
+    pub async fn disable_idling(&mut self) {
+        if let Some(identifier) = self.window_identifier().await {
+            if let Ok(proxy) = InhibitProxy::new().await {
+                let mut flags = BitFlags::empty();
+                flags.insert(InhibitFlags::Idle);
+
+                let reason = "Prevent screen from going blank during media playback";
+
+                self.inhibit_request = proxy
+                    .inhibit(Some(&identifier), flags, reason)
+                    .await
+                    .map_err(|e| error!("Failed to prevent idling: {e}"))
+                    .ok();
+            }
+        }
+    }
+
+    pub async fn enable_idling(&mut self) {
+        if let Some(request) = self.inhibit_request.take() {
+            request
+                .close()
+                .await
+                .map_err(|e| error!("Failed to allow idling: {e}"))
+                .ok();
+        }
     }
 
     pub async fn open_url<T: Into<String>>(&self, input: T) {
