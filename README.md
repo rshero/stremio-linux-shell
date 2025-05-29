@@ -1,6 +1,13 @@
-# Stremio Linux Shell
+<div align="center">
 
-This Project is using [`winit`](https://github.com/rust-windowing/winit) + [`glutin`](https://github.com/rust-windowing/glutin) with [`libmpv`](https://github.com/mpv-player/mpv/blob/master/DOCS/man/libmpv.rst) and [`CEF`](https://github.com/chromiumembedded/cef)
+![Stremio icon](data/icons/com.stremio.App.svg "Stremio icon")
+
+# Stremio on Linux 
+Client for Stremio on Linux using [`winit`](https://github.com/rust-windowing/winit) + [`glutin`](https://github.com/rust-windowing/glutin) with [`libmpv`](https://github.com/mpv-player/mpv/blob/master/DOCS/man/libmpv.rst) and [`CEF`](https://github.com/chromiumembedded/cef)
+
+<img src="data/screenshots/screenshot1.png" alrt="Screenshot" width="800" />
+
+</div>
 
 ## Development
 
@@ -42,13 +49,3 @@ python3 -m pip install toml aiohttp
 ```bash
 ./flatpak/build.sh
 ```
-
-### How it works
-
-The application runs a main loop that handles events from [`app`](/src//app/mod.rs), [`webview`](/src/webview/mod.rs), and [`player`](/src//player/mod.rs).  
-
-This project uses a shared `OpenGL` renderer that allows `CEF` to draw its `on_paint` buffer via a `Pixel Buffer Object` (PBO), and `MPV` to render onto a `Framebuffer Object` (FBO).  
-Both output textures are composited using shaders and blend functions, then drawn onto a single OpenGL surface.
-
-The webview, which uses CEF, operates in multi-threaded mode and is not tied to the main loop.  
-However, since the OpenGL context and surface are shared with mutex, it must wait for them to be unlocked before painting.
