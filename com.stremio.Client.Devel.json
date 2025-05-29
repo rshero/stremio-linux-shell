@@ -39,8 +39,8 @@
     ],
     "build-options": {
         "append-path": "/usr/lib/sdk/rust-stable/bin",
+        "append-pkg-config-path": "/app/lib/pkgconfig:/app/lib64/pkgconfig",
         "env": {
-            "PKG_CONFIG_PATH": "/app/lib/pkgconfig:/app/lib64/pkgconfig",
             "CEF_PATH": "/app/share/stremio"
         }
     },
