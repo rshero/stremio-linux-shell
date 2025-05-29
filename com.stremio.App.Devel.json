@@ -15,7 +15,9 @@
         "org.freedesktop.Platform.VAAPI.Intel": {
             "version": "24.08",
             "directory": "lib/intel-vaapi-driver",
-            "add-ld-path": "."
+            "add-ld-path": ".",
+            "download-if": "have-intel-gpu",
+            "enable-if": "have-intel-gpu"
         }
     },
     "command": "stremio",
