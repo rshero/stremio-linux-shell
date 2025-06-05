@@ -3,6 +3,7 @@ mod utils;
 
 use std::{
     ffi::CString,
+    path::PathBuf,
     sync::mpsc::{Receiver, Sender, channel},
 };
 
@@ -58,6 +59,9 @@ pub enum AppEvent {
     MouseInput(MouseState),
     TouchInput(Touch),
     KeyboardInput((KeyEvent, ModifiersState)),
+    FileHover((PathBuf, MouseState)),
+    FileDrop(MouseState),
+    FileCancel,
 }
 
 pub struct App {
@@ -295,6 +299,17 @@ impl ApplicationHandler<UserEvent> for App {
             }
             WindowEvent::Touch(touch) => {
                 self.sender.send(AppEvent::TouchInput(touch)).ok();
+            }
+            WindowEvent::HoveredFile(path) => {
+                self.sender
+                    .send(AppEvent::FileHover((path, self.mouse_state)))
+                    .ok();
+            }
+            WindowEvent::DroppedFile(_) => {
+                self.sender.send(AppEvent::FileDrop(self.mouse_state)).ok();
+            }
+            WindowEvent::HoveredFileCancelled => {
+                self.sender.send(AppEvent::FileCancel).ok();
             }
             WindowEvent::Resized(size) => {
                 self.sender.send(AppEvent::Resized(size.into())).ok();

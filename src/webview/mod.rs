@@ -3,18 +3,21 @@ mod app;
 mod cef_impl;
 mod constants;
 
-use std::sync::mpsc::{Receiver, Sender, channel};
+use std::{
+    path::PathBuf,
+    sync::mpsc::{Receiver, Sender, channel},
+};
 
 use adapters::{NativeKeyCode, WindowsKeyCode};
 use app::WebViewApp;
 use cef::{
     App, Browser, BrowserHost, BrowserSettings, CefString, Client, Frame, ImplBrowser,
-    ImplBrowserHost, ImplCommandLine, ImplFrame, LogSeverity, Settings, api_hash, args::Args,
-    execute_process, initialize,
+    ImplBrowserHost, ImplCommandLine, ImplDragData, ImplFrame, LogSeverity, Settings, api_hash,
+    args::Args, execute_process, initialize,
 };
 use cef_dll_sys::{
-    cef_event_flags_t, cef_key_event_type_t, cef_log_severity_t, cef_mouse_button_type_t,
-    cef_paint_element_type_t, cef_pointer_type_t, cef_touch_event_type_t,
+    cef_drag_operations_mask_t, cef_event_flags_t, cef_key_event_type_t, cef_log_severity_t,
+    cef_mouse_button_type_t, cef_paint_element_type_t, cef_pointer_type_t, cef_touch_event_type_t,
 };
 use constants::IPC_SENDER;
 use once_cell::sync::OnceCell;
@@ -297,6 +300,46 @@ impl WebView {
                     host.send_key_event(Some(&event));
                 }
             }
+        }
+    }
+
+    pub fn file_hover(&self, path: PathBuf, state: MouseState) {
+        if let Some(host) = self.browser_host() {
+            let event = state.into();
+
+            let file_path = path.to_str().map(CefString::from);
+            let file_name = path
+                .file_name()
+                .and_then(|name| name.to_str())
+                .map(CefString::from);
+
+            if let Some(mut drag_data) = cef::drag_data_create() {
+                drag_data.add_file(file_path.as_ref(), file_name.as_ref());
+
+                host.drag_target_drag_enter(
+                    Some(&mut drag_data),
+                    Some(&event),
+                    cef_drag_operations_mask_t::DRAG_OPERATION_MOVE.into(),
+                );
+
+                host.drag_target_drag_over(
+                    Some(&event),
+                    cef_drag_operations_mask_t::DRAG_OPERATION_MOVE.into(),
+                );
+            }
+        }
+    }
+
+    pub fn file_drop(&self, state: MouseState) {
+        if let Some(host) = self.browser_host() {
+            let event = state.into();
+            host.drag_target_drop(Some(&event));
+        }
+    }
+
+    pub fn file_cancel(&self) {
+        if let Some(host) = self.browser_host() {
+            host.drag_target_drag_leave();
         }
     }
 }

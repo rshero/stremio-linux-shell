@@ -196,6 +196,15 @@ fn main() -> ExitCode {
             AppEvent::KeyboardInput((key_event, modifiers)) => {
                 webview.keyboard_input(key_event, modifiers);
             }
+            AppEvent::FileHover((path, state)) => {
+                webview.file_hover(path, state);
+            }
+            AppEvent::FileDrop(state) => {
+                webview.file_drop(state);
+            }
+            AppEvent::FileCancel => {
+                webview.file_cancel();
+            }
         });
 
         webview.events(|event| match event {

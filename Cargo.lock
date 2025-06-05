@@ -1041,6 +1041,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f25c0e292a7ca6d6498557ff1df68f32c99850012b6ea401cf8daf771f22ff53"
 
 [[package]]
+name = "dpi"
+version = "0.1.1"
+source = "git+https://github.com/Stremio/winit?branch=feat%2Fwayland-file-window-events#dbb55e126896887283c269c4460d0d7f80349012"
+
+[[package]]
 name = "either"
 version = "1.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1585,8 +1590,7 @@ dependencies = [
 [[package]]
 name = "glutin"
 version = "0.32.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "12124de845cacfebedff80e877bb37b5b75c34c5a4c89e47e1cdd67fb6041325"
+source = "git+https://github.com/Stremio/glutin?branch=feat%2Fwayland-file-window-events#7d45516496d1783ba37fa94ebdd255272605892c"
 dependencies = [
  "bitflags 2.9.0",
  "cfg_aliases",
@@ -1610,8 +1614,7 @@ dependencies = [
 [[package]]
 name = "glutin-winit"
 version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "85edca7075f8fc728f28cb8fbb111a96c3b89e930574369e3e9c27eb75d3788f"
+source = "git+https://github.com/Stremio/glutin?branch=feat%2Fwayland-file-window-events#7d45516496d1783ba37fa94ebdd255272605892c"
 dependencies = [
  "cfg_aliases",
  "glutin",
@@ -1622,8 +1625,7 @@ dependencies = [
 [[package]]
 name = "glutin_egl_sys"
 version = "0.7.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4c4680ba6195f424febdc3ba46e7a42a0e58743f2edb115297b86d7f8ecc02d2"
+source = "git+https://github.com/Stremio/glutin?branch=feat%2Fwayland-file-window-events#7d45516496d1783ba37fa94ebdd255272605892c"
 dependencies = [
  "gl_generator",
  "windows-sys 0.52.0",
@@ -1632,8 +1634,7 @@ dependencies = [
 [[package]]
 name = "glutin_glx_sys"
 version = "0.6.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8a7bb2938045a88b612499fbcba375a77198e01306f52272e692f8c1f3751185"
+source = "git+https://github.com/Stremio/glutin?branch=feat%2Fwayland-file-window-events#7d45516496d1783ba37fa94ebdd255272605892c"
 dependencies = [
  "gl_generator",
  "x11-dl",
@@ -1642,8 +1643,7 @@ dependencies = [
 [[package]]
 name = "glutin_wgl_sys"
 version = "0.6.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2c4ee00b289aba7a9e5306d57c2d05499b2e5dc427f84ac708bd2c090212cf3e"
+source = "git+https://github.com/Stremio/glutin?branch=feat%2Fwayland-file-window-events#7d45516496d1783ba37fa94ebdd255272605892c"
 dependencies = [
  "gl_generator",
 ]
@@ -2446,7 +2446,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4de14a9b5d569ca68d7c891d613b390cf5ab4f851c77aaa2f9e435555d3d9492"
 dependencies = [
  "crossbeam-channel",
- "dpi",
+ "dpi 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "gtk",
  "keyboard-types",
  "objc2 0.6.1",
@@ -5190,8 +5190,7 @@ checksum = "271414315aff87387382ec3d271b52d7ae78726f5d44ac98b4f4030c91880486"
 [[package]]
 name = "winit"
 version = "0.30.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a4409c10174df8779dc29a4788cac85ed84024ccbc1743b776b21a520ee1aaf4"
+source = "git+https://github.com/Stremio/winit?branch=feat%2Fwayland-file-window-events#dbb55e126896887283c269c4460d0d7f80349012"
 dependencies = [
  "ahash",
  "android-activity",
@@ -5205,7 +5204,7 @@ dependencies = [
  "core-foundation",
  "core-graphics",
  "cursor-icon",
- "dpi",
+ "dpi 0.1.1 (git+https://github.com/Stremio/winit?branch=feat%2Fwayland-file-window-events)",
  "js-sys",
  "libc",
  "memmap2",
@@ -5225,6 +5224,7 @@ dependencies = [
  "smol_str",
  "tracing",
  "unicode-segmentation",
+ "url",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "wayland-backend",
