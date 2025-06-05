@@ -29,6 +29,7 @@
         "--share=network",
         "--device=dri",
         "--persist=.stremio-server",
+        "--filesystem=xdg-download",
         "--filesystem=xdg-run/stremio:create",
         "--env=LD_LIBRARY_PATH=/app/lib/:/app/lib64/:/app/share/stremio",
         "--system-talk-name=org.freedesktop.systemd1",
