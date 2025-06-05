@@ -39,4 +39,13 @@
     <url type="bugtracker">https://github.com/Stremio/stremio-linux/issues</url>
 
     <launchable type="desktop-id">com.stremio.Stremio.desktop</launchable>
+
+    <releases>
+        <release version="1.0.0-beta.6" date="2025-05-26" />
+        <release version="1.0.0-beta.5" date="2025-05-22" />
+        <release version="1.0.0-beta.4" date="2025-05-21" />
+        <release version="1.0.0-beta.3" date="2025-05-09" />
+        <release version="1.0.0-beta.2" date="2025-05-02" />
+        <release version="1.0.0-beta.1" date="2025-04-30" />
+    </releases>
 </component>
