@@ -1,6 +1,6 @@
 pub const APP_ID: &str = match cfg!(debug_assertions) {
-    true => "com.stremio.Client.Devel",
-    false => "com.stremio.Client",
+    true => "com.stremio.Stremio.Devel",
+    false => "com.stremio.Stremio",
 };
 
 pub const APP_NAME: &str = "Stremio";

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-    <id>com.stremio.Client</id>
+    <id>com.stremio.Stremio</id>
     <name>Stremio</name>
     <summary>Freedom to Stream</summary>
     <description>
@@ -38,5 +38,5 @@
     <url type="homepage">https://github.com/Stremio/stremio-linux</url>
     <url type="bugtracker">https://github.com/Stremio/stremio-linux/issues</url>
 
-    <launchable type="desktop-id">com.stremio.Client.desktop</launchable>
+    <launchable type="desktop-id">com.stremio.Stremio.desktop</launchable>
 </component>

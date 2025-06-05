@@ -1,5 +1,5 @@
 {
-    "app-id": "com.stremio.Client.Devel",
+    "app-id": "com.stremio.Stremio.Devel",
     "runtime": "org.freedesktop.Platform",
     "runtime-version": "24.08",
     "sdk": "org.freedesktop.Sdk",
@@ -60,11 +60,11 @@
             "post-install": [
                 "install -Dm755 data/stremio -t /app/bin/",
                 "install -Dm755 target/debug/stremio-linux-shell /app/share/stremio/stremio",
-                "install -Dm644 data/icons/com.stremio.Client.Devel.svg -t /app/share/icons/hicolor/scalable/apps/",
-                "install -Dm644 data/com.stremio.Client.desktop /app/share/applications/com.stremio.Client.Devel.desktop",
-                "sed -i -e 's/com.stremio.Client/com.stremio.Client.Devel/g' /app/share/applications/com.stremio.Client.Devel.desktop",
-                "install -Dm644 data/com.stremio.Client.metainfo.xml /app/share/metainfo/com.stremio.Client.Devel.metainfo.xml",
-                "sed -i -e 's/com.stremio.Client/com.stremio.Client.Devel/g' /app/share/metainfo/com.stremio.Client.Devel.metainfo.xml",
+                "install -Dm644 data/icons/com.stremio.Stremio.Devel.svg -t /app/share/icons/hicolor/scalable/apps/",
+                "install -Dm644 data/com.stremio.Stremio.desktop /app/share/applications/com.stremio.Stremio.Devel.desktop",
+                "sed -i -e 's/com.stremio.Stremio/com.stremio.Stremio.Devel/g' /app/share/applications/com.stremio.Stremio.Devel.desktop",
+                "install -Dm644 data/com.stremio.Stremio.metainfo.xml /app/share/metainfo/com.stremio.Stremio.Devel.metainfo.xml",
+                "sed -i -e 's/com.stremio.Stremio/com.stremio.Stremio.Devel/g' /app/share/metainfo/com.stremio.Stremio.Devel.metainfo.xml",
                 "mkdir -p /app/lib/ffmpeg",
                 "mkdir -p /app/lib/intel-vaapi-driver"
             ],

@@ -1,6 +1,6 @@
 <div align="center">
 
-![Stremio icon](data/icons/com.stremio.Client.svg "Stremio icon")
+![Stremio icon](data/icons/com.stremio.Stremio.svg "Stremio icon")
 
 # Stremio on Linux 
 Client for Stremio on Linux using [`winit`](https://github.com/rust-windowing/winit) + [`glutin`](https://github.com/rust-windowing/glutin) with [`libmpv`](https://github.com/mpv-player/mpv/blob/master/DOCS/man/libmpv.rst) and [`CEF`](https://github.com/chromiumembedded/cef)

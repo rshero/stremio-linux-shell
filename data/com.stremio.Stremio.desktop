@@ -1,7 +1,7 @@
 [Desktop Entry]
 Name=Stremio
 Comment=Freedom To Stream
-Icon=com.stremio.Client
+Icon=com.stremio.Stremio
 Terminal=false
 StartupNotify=true
 Exec=sh -c "stremio -o '%u'"
