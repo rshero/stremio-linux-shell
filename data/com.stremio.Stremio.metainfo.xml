@@ -41,6 +41,7 @@
     <launchable type="desktop-id">com.stremio.Stremio.desktop</launchable>
 
     <releases>
+        <release version="1.0.0-beta.7" date="2025-06-05" />
         <release version="1.0.0-beta.6" date="2025-05-26" />
         <release version="1.0.0-beta.5" date="2025-05-22" />
         <release version="1.0.0-beta.4" date="2025-05-21" />
