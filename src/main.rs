@@ -268,8 +268,11 @@ fn main() -> ExitCode {
             PlayerEvent::Start => {
                 futures::executor::block_on(app.disable_idling());
             }
-            PlayerEvent::Stop => {
+            PlayerEvent::Stop(error) => {
                 futures::executor::block_on(app.enable_idling());
+
+                let message = ipc::create_response(IpcEvent::Mpv(IpcEventMpv::Ended(error)));
+                webview.post_message(message);
             }
             PlayerEvent::Update => {
                 needs_redraw = true;

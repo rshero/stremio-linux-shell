@@ -17,6 +17,7 @@ use libmpv2::{
     events::{Event, EventContext, PropertyData},
     render::{OpenGLInitParams, RenderContext, RenderParam, RenderParamApiType},
 };
+use rust_i18n::t;
 use serde::{Deserialize, Serialize, Serializer, ser::SerializeStruct};
 use serde_json::{Number, Value};
 use tracing::error;
@@ -101,7 +102,7 @@ impl Serialize for MpvProperty {
 #[derive(Debug)]
 pub enum PlayerEvent {
     Start,
-    Stop,
+    Stop(Option<String>),
     Update,
     PropertyChange(MpvProperty),
 }
@@ -112,7 +113,15 @@ impl<'a> TryFrom<Event<'a>> for PlayerEvent {
     fn try_from(value: Event<'a>) -> Result<Self, Self::Error> {
         match value {
             Event::StartFile => Ok(PlayerEvent::Start),
-            Event::EndFile(_) => Ok(PlayerEvent::Stop),
+            Event::EndFile(code) => {
+                let error = match code {
+                    3 => Some(t!("player_error_quit")),
+                    4 => Some(t!("player_error_general")),
+                    _ => None,
+                };
+
+                Ok(PlayerEvent::Stop(error.map(String::from)))
+            }
             Event::PropertyChange { name, change, .. } => {
                 let property = match change {
                     PropertyData::Double(value) => MpvProperty(
