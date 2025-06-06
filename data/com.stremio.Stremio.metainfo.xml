@@ -12,19 +12,19 @@
 
     <screenshots>
         <screenshot type="default">
-            <image xml:lang="en">
+            <image>
                 https://raw.githubusercontent.com/Stremio/stremio-linux-shell/refs/heads/main/data/screenshots/screenshot1.png
             </image>
             <caption>Home page</caption>
         </screenshot>
         <screenshot>
-            <image xml:lang="en">
+            <image>
                 https://raw.githubusercontent.com/Stremio/stremio-linux-shell/refs/heads/main/data/screenshots/screenshot2.png
             </image>
             <caption>Details page</caption>
         </screenshot>
         <screenshot>
-            <image xml:lang="en">
+            <image>
                 https://raw.githubusercontent.com/Stremio/stremio-linux-shell/refs/heads/main/data/screenshots/screenshot3.png
             </image>
             <caption>Player page</caption>
