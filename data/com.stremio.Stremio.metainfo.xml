@@ -8,7 +8,9 @@
         <p>With its easy-to-use interface and diverse content library, including 4K HDR support, users can enjoy their favorite movies and TV shows across all their devices.</p>
         <p>And with its commitment to security, Stremio is the ultimate choice for a worry-free, high-quality streaming experience.</p>
     </description>
-    <developer_name>Stremio</developer_name>
+    <developer id="com.stremio">
+        <name>Stremio</name>
+    </developer>
 
     <screenshots>
         <screenshot type="default">
