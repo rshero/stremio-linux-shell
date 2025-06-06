@@ -35,8 +35,8 @@
     <project_license>GPL-3.0-only</project_license>
     <content_rating type="oars-1.1" />
 
-    <url type="homepage">https://github.com/Stremio/stremio-linux</url>
-    <url type="bugtracker">https://github.com/Stremio/stremio-linux/issues</url>
+    <url type="homepage">https://github.com/Stremio/stremio-linux-shell</url>
+    <url type="bugtracker">https://github.com/Stremio/stremio-linux-shell/issues</url>
 
     <launchable type="desktop-id">com.stremio.Stremio.desktop</launchable>
 
