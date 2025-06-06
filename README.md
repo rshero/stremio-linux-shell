@@ -9,6 +9,13 @@ Client for Stremio on Linux using [`winit`](https://github.com/rust-windowing/wi
 
 </div>
 
+## Installation
+
+```bash
+flatpak remote-add --if-not-exists flathub-beta https://flathub.org/beta-repo/flathub-beta.flatpakrepo
+flatpak install flathub-beta com.stremio.Stremio
+```
+
 ## Development
 
 ```bash
