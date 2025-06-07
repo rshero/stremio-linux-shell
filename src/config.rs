@@ -11,6 +11,7 @@ pub struct Config {
     pub instance: InstanceConfig,
     pub server: ServerConfig,
     pub webview: WebViewConfig,
+    pub tray: TrayConfig,
 }
 
 impl Config {
@@ -29,11 +30,13 @@ impl Config {
         let instance = InstanceConfig::new(&runtime_dir);
         let server = ServerConfig::new(&data_dir);
         let webview = WebViewConfig::new(&data_dir);
+        let tray = TrayConfig::new(&runtime_dir);
 
         Self {
             instance,
             server,
             webview,
+            tray,
         }
     }
 }
@@ -112,5 +115,19 @@ impl WebViewConfig {
 
     pub fn remove_lock_file(&self) {
         let _ = fs::remove_file(&self.lock_file);
+    }
+}
+
+const TRAY_ICON_DIR: &str = "tray";
+
+pub struct TrayConfig {
+    pub icon_path: PathBuf,
+}
+
+impl TrayConfig {
+    pub fn new(runtime_path: &Path) -> Self {
+        let icon_path = runtime_path.join(TRAY_ICON_DIR);
+
+        Self { icon_path }
     }
 }

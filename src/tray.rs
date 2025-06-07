@@ -11,7 +11,7 @@ use tray_icon::{
     menu::{Menu, MenuEvent, MenuItem},
 };
 
-use crate::shared::types::UserEvent;
+use crate::{config::TrayConfig, shared::types::UserEvent};
 
 const ICON: &[u8] = include_bytes!(concat!(
     env!("CARGO_MANIFEST_DIR"),
@@ -28,7 +28,7 @@ pub struct Tray {
 }
 
 impl Tray {
-    pub fn new() -> Self {
+    pub fn new(config: TrayConfig) -> Self {
         let (sender, receiver) = channel::<UserEvent>();
         let (tray_sender, tray_receiver) = channel::<TrayEvent>();
 
@@ -41,7 +41,7 @@ impl Tray {
             }
 
             let menu = Self::create_menu();
-            let tray = Self::create(menu);
+            let tray = Self::create(menu, config);
 
             glib::timeout_add_local(Duration::from_millis(16), move || {
                 tray_receiver.try_iter().for_each(|event| match event {
@@ -105,12 +105,13 @@ impl Tray {
         Box::new(menu)
     }
 
-    fn create(menu: Box<Menu>) -> TrayIcon {
+    fn create(menu: Box<Menu>, config: TrayConfig) -> TrayIcon {
         let icon = load_icon(ICON);
 
         TrayIconBuilder::new()
             .with_menu(menu)
             .with_icon(icon)
+            .with_temp_dir_path(config.icon_path)
             .build()
             .expect("Failed to build tray icon")
     }

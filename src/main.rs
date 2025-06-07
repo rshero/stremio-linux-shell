@@ -75,7 +75,7 @@ fn main() -> ExitCode {
         server.start(args.dev).expect("Failed to start server");
     }
 
-    let tray = Tray::new();
+    let tray = Tray::new(config.tray);
     let mut app = App::new();
     let mut player = Player::new();
 
