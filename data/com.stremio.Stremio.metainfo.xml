@@ -12,6 +12,11 @@
         <name>Stremio</name>
     </developer>
 
+    <branding>
+        <color type="primary" scheme_preference="light">#1a173e</color>
+        <color type="primary" scheme_preference="dark">#0c0b11</color>
+    </branding>
+
     <screenshots>
         <screenshot type="default">
             <image>
