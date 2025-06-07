@@ -68,6 +68,7 @@ pub struct App {
     window: Option<Window>,
     sender: Sender<AppEvent>,
     receiver: Receiver<AppEvent>,
+    maximized: bool,
     modifiers_state: ModifiersState,
     mouse_state: MouseState,
     inhibit_request: Option<Request<()>>,
@@ -81,6 +82,7 @@ impl App {
             window: None,
             sender,
             receiver,
+            maximized: false,
             modifiers_state: ModifiersState::empty(),
             mouse_state: MouseState::default(),
             inhibit_request: None,
@@ -97,6 +99,7 @@ impl App {
             .with_name(APP_ID, APP_ID)
             .with_decorations(true)
             .with_resizable(true)
+            .with_maximized(self.maximized)
             .with_min_inner_size(PhysicalSize::new(900, 600))
             .with_inner_size(PhysicalSize::<u32>::from(WINDOW_SIZE));
 
@@ -318,6 +321,8 @@ impl ApplicationHandler<UserEvent> for App {
                 self.sender.send(AppEvent::Focused(state)).ok();
 
                 if let Some(window) = self.window.as_ref() {
+                    self.maximized = window.is_maximized();
+
                     let minimized = window.is_minimized().unwrap_or(false);
                     self.sender.send(AppEvent::Minimized(minimized)).ok();
                 }
