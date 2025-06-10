@@ -122,18 +122,6 @@ impl TryFrom<String> for IpcEvent {
     }
 }
 
-#[derive(Serialize, Debug, Clone)]
-pub struct IpcMessageResponseDataTransport {
-    properties: Vec<Vec<String>>,
-    signals: Vec<String>,
-    methods: Vec<Vec<String>>,
-}
-
-#[derive(Serialize, Debug, Clone)]
-pub struct IpcMessageResponseData {
-    transport: IpcMessageResponseDataTransport,
-}
-
 #[derive(Serialize, Debug)]
 pub struct IpcMessageResponse {
     id: u64,
