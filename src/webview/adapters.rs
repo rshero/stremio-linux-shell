@@ -66,6 +66,7 @@ impl TryFrom<KeyCode> for WindowsKeyCode {
             KeyCode::Digit7 => Ok(Self(55)),
             KeyCode::Digit8 => Ok(Self(56)),
             KeyCode::Digit9 => Ok(Self(57)),
+            KeyCode::Equal => Ok(Self(61)),
             KeyCode::KeyA => Ok(Self(65)),
             KeyCode::KeyC => Ok(Self(67)),
             KeyCode::KeyD => Ok(Self(68)),
@@ -76,6 +77,7 @@ impl TryFrom<KeyCode> for WindowsKeyCode {
             KeyCode::KeyV => Ok(Self(86)),
             KeyCode::KeyX => Ok(Self(88)),
             KeyCode::F11 => Ok(Self(122)),
+            KeyCode::Minus => Ok(Self(173)),
             _ => Err("Failed to convert KeyCode to WindowsKeyCode"),
         }
     }
@@ -111,6 +113,7 @@ impl TryFrom<KeyCode> for NativeKeyCode {
             KeyCode::Digit7 => Ok(Self(16)),
             KeyCode::Digit8 => Ok(Self(17)),
             KeyCode::Digit9 => Ok(Self(18)),
+            KeyCode::Equal => Ok(Self(21)),
             KeyCode::KeyA => Ok(Self(38)),
             KeyCode::KeyC => Ok(Self(54)),
             KeyCode::KeyD => Ok(Self(40)),
@@ -121,6 +124,7 @@ impl TryFrom<KeyCode> for NativeKeyCode {
             KeyCode::KeyV => Ok(Self(55)),
             KeyCode::KeyX => Ok(Self(53)),
             KeyCode::F11 => Ok(Self(95)),
+            KeyCode::Minus => Ok(Self(20)),
             _ => Err("Failed to convert KeyCode to NativeKeyCode"),
         }
     }

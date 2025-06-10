@@ -1,4 +1,5 @@
 mod display_handler;
+mod keyboard_handler;
 mod lifespan_handler;
 mod load_handler;
 mod render_handler;
@@ -12,6 +13,7 @@ use crate::{
     WebViewEvent, cef_impl,
     webview::{
         SENDER,
+        app::client::keyboard_handler::WebViewKeyboardHandler,
         constants::{IPC_MESSAGE, READY_MESSAGE},
     },
 };
@@ -35,6 +37,10 @@ cef_impl!(
 
         fn load_handler(&self) -> Option<LoadHandler> {
             Some(WebViewLoadHandler::new())
+        }
+
+        fn keyboard_handler(&self) -> Option<KeyboardHandler> {
+            Some(WebViewKeyboardHandler::new())
         }
 
         fn on_process_message_received(
