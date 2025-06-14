@@ -2296,7 +2296,7 @@ dependencies = [
 [[package]]
 name = "libmpv2"
 version = "4.1.0"
-source = "git+https://github.com/Stremio/libmpv2-rs#acf21f7a23a346de8c1474aea7d8c56261f4ba06"
+source = "git+https://github.com/Stremio/libmpv2-rs#b2b0ce03fde964c0c5cd4f66e193740062468b41"
 dependencies = [
  "libmpv2-sys",
 ]
@@ -2304,7 +2304,7 @@ dependencies = [
 [[package]]
 name = "libmpv2-sys"
 version = "4.0.0"
-source = "git+https://github.com/Stremio/libmpv2-rs#acf21f7a23a346de8c1474aea7d8c56261f4ba06"
+source = "git+https://github.com/Stremio/libmpv2-rs#b2b0ce03fde964c0c5cd4f66e193740062468b41"
 
 [[package]]
 name = "libredox"
