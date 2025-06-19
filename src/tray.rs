@@ -1,9 +1,6 @@
-use std::{
-    sync::mpsc::{Receiver, Sender, channel},
-    thread,
-    time::Duration,
-};
+use std::{thread, time::Duration};
 
+use crossbeam_channel::{Receiver, Sender, unbounded};
 use gtk::glib;
 use rust_i18n::t;
 use tray_icon::{
@@ -29,8 +26,8 @@ pub struct Tray {
 
 impl Tray {
     pub fn new(config: TrayConfig) -> Self {
-        let (sender, receiver) = channel::<UserEvent>();
-        let (tray_sender, tray_receiver) = channel::<TrayEvent>();
+        let (sender, receiver) = unbounded::<UserEvent>();
+        let (tray_sender, tray_receiver) = unbounded::<TrayEvent>();
 
         thread::spawn(|| {
             gtk::init().expect("Failed to initialize gtk");

@@ -1,9 +1,10 @@
 use std::{
     io::{Read, Write},
     os::unix::net::{UnixListener, UnixStream},
-    sync::mpsc::{Receiver, Sender, channel},
     thread,
 };
+
+use crossbeam_channel::{Receiver, Sender, unbounded};
 
 use crate::config::InstanceConfig;
 
@@ -20,7 +21,7 @@ pub struct Instance {
 
 impl Instance {
     pub fn new(config: InstanceConfig) -> Self {
-        let (sender, receiver) = channel::<InstanceEvent>();
+        let (sender, receiver) = unbounded::<InstanceEvent>();
         let socket = UnixStream::connect(&config.socket_file).ok();
 
         Self {

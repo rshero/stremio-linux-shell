@@ -3942,6 +3942,7 @@ dependencies = [
  "cef",
  "cef-dll-sys",
  "clap",
+ "crossbeam-channel",
  "dircpy",
  "dirs",
  "futures",

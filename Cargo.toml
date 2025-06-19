@@ -16,6 +16,7 @@ bytes = "1.10.1"
 cef = "135.0.22"
 cef-dll-sys = "135.0.22"
 clap = { version = "4.5.38", features = ["derive"] }
+crossbeam-channel = "0.5.15"
 dirs = "6.0.0"
 futures = "0.3.31"
 gl = "0.14.0"

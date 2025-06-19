@@ -1,14 +1,9 @@
 mod constants;
 
-use std::{
-    env,
-    ffi::CString,
-    os::raw::c_void,
-    rc::Rc,
-    sync::mpsc::{Receiver, Sender, channel},
-};
+use std::{env, ffi::CString, os::raw::c_void, rc::Rc};
 
 use constants::{BOOL_PROPERTIES, FLOAT_PROPERTIES, STRING_PROPERTIES};
+use crossbeam_channel::{Receiver, Sender, unbounded};
 use glutin::{display::Display, prelude::GlDisplay};
 use itertools::Itertools;
 use libc::{LC_NUMERIC, setlocale};
@@ -179,7 +174,7 @@ impl Player {
             .disable_deprecated_events()
             .expect("Failed to disable deprecated events");
 
-        let (sender, receiver) = channel::<PlayerEvent>();
+        let (sender, receiver) = unbounded::<PlayerEvent>();
 
         Self {
             mpv,

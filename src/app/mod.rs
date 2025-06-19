@@ -1,11 +1,7 @@
 mod adapters;
 mod utils;
 
-use std::{
-    ffi::CString,
-    path::PathBuf,
-    sync::mpsc::{Receiver, Sender, channel},
-};
+use std::{ffi::CString, path::PathBuf};
 
 use ashpd::{
     WindowIdentifier,
@@ -17,6 +13,7 @@ use ashpd::{
     },
     enumflags2::BitFlags,
 };
+use crossbeam_channel::{Receiver, Sender, unbounded};
 use glutin::{
     context::{ContextApi, Version},
     display::GetGlDisplay,
@@ -76,7 +73,7 @@ pub struct App {
 
 impl App {
     pub fn new() -> Self {
-        let (sender, receiver) = channel::<AppEvent>();
+        let (sender, receiver) = unbounded::<AppEvent>();
 
         Self {
             window: None,

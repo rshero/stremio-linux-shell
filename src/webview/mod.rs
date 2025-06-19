@@ -3,10 +3,7 @@ mod app;
 mod cef_impl;
 mod constants;
 
-use std::{
-    path::PathBuf,
-    sync::mpsc::{Receiver, Sender, channel},
-};
+use std::path::PathBuf;
 
 use adapters::{NativeKeyCode, WindowsKeyCode};
 use app::WebViewApp;
@@ -20,6 +17,7 @@ use cef_dll_sys::{
     cef_mouse_button_type_t, cef_paint_element_type_t, cef_pointer_type_t, cef_touch_event_type_t,
 };
 use constants::IPC_SENDER;
+use crossbeam_channel::{Receiver, Sender, unbounded};
 use once_cell::sync::OnceCell;
 use url::Url;
 use winit::{
@@ -58,7 +56,7 @@ impl WebView {
 
         let args = Args::new();
 
-        let (sender, receiver) = channel::<WebViewEvent>();
+        let (sender, receiver) = unbounded::<WebViewEvent>();
         SENDER.get_or_init(|| sender);
 
         let app = WebViewApp::new();
