@@ -57,9 +57,4 @@ window.ipc.addEventListener('message', (message) => {
     window.qt.webChannelTransport.onmessage(message);
 });
 
-// Initialize
-window.addEventListener('load', () => {
-    initShellComm();
-});
-
 console.log('preload');
