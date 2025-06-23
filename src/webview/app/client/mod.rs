@@ -4,6 +4,8 @@ mod lifespan_handler;
 mod load_handler;
 mod render_handler;
 
+use std::os::raw::c_int;
+
 use display_handler::WebViewDisplayHandler;
 use lifespan_handler::WebViewLifeSpanHandler;
 use load_handler::WebViewLoadHandler;
@@ -45,11 +47,11 @@ cef_impl!(
 
         fn on_process_message_received(
             &self,
-            _browser: Option<&mut impl ImplBrowser>,
-            _frame: Option<&mut impl ImplFrame>,
+            _browser: Option<&mut Browser>,
+            _frame: Option<&mut Frame>,
             _source_process: ProcessId,
-            message: Option<&mut impl ImplProcessMessage>,
-        ) -> ::std::os::raw::c_int {
+            message: Option<&mut ProcessMessage>,
+        ) -> c_int {
             if let Some(message) = message {
                 let name = CefString::from(&message.name());
 

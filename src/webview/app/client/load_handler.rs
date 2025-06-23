@@ -1,3 +1,5 @@
+use std::os::raw::c_int;
+
 use crate::{
     cef_impl,
     webview::{
@@ -13,8 +15,8 @@ cef_impl!(
     {
         fn on_load_start(
             &self,
-            _browser: Option<&mut impl ImplBrowser>,
-            frame: Option<&mut impl ImplFrame>,
+            _browser: Option<&mut Browser>,
+            frame: Option<&mut Frame>,
             _transition_type: TransitionType,
         ) {
             if let Some(frame) = frame {
@@ -30,9 +32,9 @@ cef_impl!(
 
         fn on_load_end(
             &self,
-            _browser: Option<&mut impl ImplBrowser>,
-            frame: Option<&mut impl ImplFrame>,
-            http_status_code: ::std::os::raw::c_int,
+            _browser: Option<&mut Browser>,
+            frame: Option<&mut Frame>,
+            http_status_code: c_int,
         ) {
             if let Some(frame) = frame {
                 if frame.is_main() == 1 && http_status_code == 200 {

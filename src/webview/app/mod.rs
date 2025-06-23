@@ -17,7 +17,7 @@ cef_impl!(
         fn on_before_command_line_processing(
             &self,
             _process_type: Option<&CefString>,
-            command_line: Option<&mut impl ImplCommandLine>,
+            command_line: Option<&mut CommandLine>,
         ) {
             if let Some(line) = command_line {
                 CMD_SWITCHES.iter().for_each(|switch| {

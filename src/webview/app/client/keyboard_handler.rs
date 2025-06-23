@@ -14,7 +14,7 @@ cef_impl!(
     {
         fn on_key_event(
             &self,
-            browser: Option<&mut impl ImplBrowser>,
+            browser: Option<&mut Browser>,
             event: Option<&KeyEvent>,
             _os_event: Option<&mut cef_dll_sys::XEvent>,
         ) -> c_int {
@@ -39,7 +39,7 @@ cef_impl!(
     }
 );
 
-fn set_zoom_level(browser: Option<&mut impl ImplBrowser>, amount: f64) {
+fn set_zoom_level(browser: Option<&mut Browser>, amount: f64) {
     if let Some(browser) = browser {
         if let Some(host) = browser.host() {
             let zoom_level = host.zoom_level();

@@ -1,11 +1,11 @@
 use cef::{
-    CefString, CefStringUtf16, ImplBrowser, ImplFrame, ImplListValue, ImplProcessMessage,
+    Browser, CefString, CefStringUtf16, ImplBrowser, ImplFrame, ImplListValue, ImplProcessMessage,
     process_message_create,
 };
 use cef_dll_sys::cef_process_id_t;
 
 pub fn send_process_message(
-    browser: Option<&mut impl ImplBrowser>,
+    browser: Option<&mut Browser>,
     name: &str,
     arg: Option<&CefStringUtf16>,
 ) {

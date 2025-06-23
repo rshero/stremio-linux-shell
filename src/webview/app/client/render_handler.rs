@@ -1,3 +1,5 @@
+use std::os::raw::c_int;
+
 use crate::{
     WebViewEvent, cef_impl,
     shared::{with_gl, with_renderer_read},
@@ -9,7 +11,7 @@ cef_impl!(
     name = RenderHandler,
     sys_type = cef_dll_sys::cef_render_handler_t,
     {
-        fn view_rect(&self, _browser: Option<&mut impl ImplBrowser>, rect: Option<&mut Rect>) {
+        fn view_rect(&self, _browser: Option<&mut Browser>, rect: Option<&mut Rect>) {
             with_renderer_read(|renderer| {
                 if let Some(rect) = rect {
                     *rect = Rect {
@@ -27,13 +29,13 @@ cef_impl!(
         // If they don't match, send a Resized event to ask for a repaint.
         fn on_paint(
             &self,
-            _browser: Option<&mut impl ImplBrowser>,
+            _browser: Option<&mut Browser>,
             _type_: PaintElementType,
             _dirty_rects_count: usize,
             dirty_rects: Option<&Rect>,
             buffer: *const u8,
-            width: ::std::os::raw::c_int,
-            height: ::std::os::raw::c_int,
+            width: c_int,
+            height: c_int,
         ) {
             with_gl(|_, _| {
                 with_renderer_read(|renderer| {

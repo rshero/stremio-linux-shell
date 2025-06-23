@@ -1,3 +1,5 @@
+use std::os::raw::c_int;
+
 use crate::{
     cef_impl,
     webview::constants::{IPC_MESSAGE, IPC_RECEIVER},
@@ -13,11 +15,11 @@ cef_impl!(
         fn execute(
             &self,
             name: Option<&CefString>,
-            _object: Option<&mut impl ImplV8Value>,
-            arguments: Option<&[Option<impl ImplV8Value>]>,
-            _retval: Option<&mut Option<impl ImplV8Value>>,
+            _object: Option<&mut V8Value>,
+            arguments: Option<&[Option<V8Value>]>,
+            _retval: Option<&mut Option<V8Value>>,
             _exception: Option<&mut CefString>,
-        ) -> ::std::os::raw::c_int {
+        ) -> c_int {
             if is_handler(name, IPC_RECEIVER) {
                 if let Some(data) = handler_data(arguments) {
                     send_ipc_message(data);

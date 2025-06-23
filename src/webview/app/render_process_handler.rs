@@ -15,17 +15,17 @@ cef_impl!(
     {
         fn on_browser_created(
             &self,
-            browser: Option<&mut impl ImplBrowser>,
-            _extra_info: Option<&mut impl ImplDictionaryValue>,
+            browser: Option<&mut Browser>,
+            _extra_info: Option<&mut DictionaryValue>,
         ) {
             utils::send_process_message(browser, READY_MESSAGE, None);
         }
 
         fn on_context_created(
             &self,
-            _browser: Option<&mut impl ImplBrowser>,
-            _frame: Option<&mut impl ImplFrame>,
-            context: Option<&mut impl ImplV8Context>,
+            _browser: Option<&mut Browser>,
+            _frame: Option<&mut Frame>,
+            context: Option<&mut V8Context>,
         ) {
             let name = CefString::from(IPC_RECEIVER);
             let mut handler = WebViewV8Handler::new();
