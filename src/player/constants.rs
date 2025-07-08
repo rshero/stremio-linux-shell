@@ -10,7 +10,6 @@ pub const FLOAT_PROPERTIES: &[&str] = &[
 
 pub const BOOL_PROPERTIES: &[&str] = &[
     "pause",
-    "mute",
     "buffering",
     "seeking",
     "osc",
@@ -30,4 +29,5 @@ pub const STRING_PROPERTIES: &[&str] = &[
     "sub-border-color",
     "sid",
     "aid",
+    "mute",
 ];
