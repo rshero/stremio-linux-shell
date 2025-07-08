@@ -55,7 +55,7 @@ fn main() -> Result<()> {
     if !cef_path.exists() {
         let cef_version = get_version()?;
         let archive_name = get_archive_name(cef_version)?;
-        let archive_url = format!("{CEF_CDN}/{}", archive_name);
+        let archive_url = format!("{CEF_CDN}/{archive_name}");
         let archive_path = cef_path.join(archive_name);
 
         fs::create_dir_all(&cef_path)?;
@@ -150,7 +150,7 @@ fn unpack_archive(path: &Path, out: &Path) -> Result<()> {
                     if glob.is_match(&file_path) {
                         let dest_path = out.join(archive_file[1]);
                         let dest_file_path = dest_path.join(file_name);
-                        println!("Writting {:?} to {:?}", file_path, dest_file_path);
+                        println!("Writting {file_path:?} to {dest_file_path:?}");
 
                         fs::create_dir_all(&dest_path)?;
                         entry.unpack(dest_file_path)?;
