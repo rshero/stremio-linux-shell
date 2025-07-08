@@ -51,7 +51,7 @@ impl Renderer {
 
             let status = gl::CheckFramebufferStatus(gl::FRAMEBUFFER);
             if status != gl::FRAMEBUFFER_COMPLETE {
-                panic!("Framebuffer not complete: {}", status);
+                panic!("Framebuffer not complete: {status}");
             }
 
             Self {

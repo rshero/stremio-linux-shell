@@ -166,7 +166,7 @@ impl WebView {
         if let Some(main_frame) = self.main_frame() {
             let serialized_message =
                 serde_json::to_string(&message).expect("Failed to serialize as JSON string");
-            let script = format!("{}({})", IPC_SENDER, serialized_message);
+            let script = format!("{IPC_SENDER}({serialized_message})");
             let code = CefString::from(script.as_str());
             main_frame.execute_java_script(Some(&code), None, 0);
         }
