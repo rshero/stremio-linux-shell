@@ -2,3 +2,6 @@
 /target
 /vendor
 *.log
+shaders
+*.exe
+mpv-configs
