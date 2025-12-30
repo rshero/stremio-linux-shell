@@ -1,6 +1,7 @@
 mod app;
 mod config;
 mod constants;
+mod discord;
 mod instance;
 mod ipc;
 mod player;
@@ -13,6 +14,7 @@ use app::{App, AppEvent};
 use clap::Parser;
 use config::Config;
 use constants::{STARTUP_URL, URI_SCHEME};
+use discord::Discord;
 use glutin::{display::GetGlDisplay, surface::GlSurface};
 use instance::{Instance, InstanceEvent};
 use ipc::{IpcEvent, IpcEventMpv};
@@ -25,6 +27,7 @@ use tray::Tray;
 use webview::{WebView, WebViewEvent};
 use winit::{
     event_loop::{ControlFlow, EventLoop},
+    keyboard::{KeyCode, PhysicalKey},
     platform::pump_events::{EventLoopExtPumpEvents, PumpStatus},
 };
 
@@ -47,11 +50,43 @@ struct Args {
     no_server: bool,
 }
 
+/// Returns the Anime4K shader command for a given key
+fn get_anime4k_shader_command(key_code: KeyCode) -> Option<(&'static str, &'static str)> {
+    match key_code {
+        KeyCode::Digit0 => Some(("clr", "Shaders cleared")),
+        KeyCode::Digit1 => Some((
+            "set",
+            "~~/shaders/anime4k/Restore/Anime4K_Clamp_Highlights.glsl;~~/shaders/anime4k/Restore/Anime4K_Restore_CNN_VL.glsl;~~/shaders/anime4k/Upscale/Anime4K_Upscale_CNN_x2_VL.glsl;~~/shaders/anime4k/Restore/Anime4K_AutoDownscalePre_x2.glsl;~~/shaders/anime4k/Restore/Anime4K_AutoDownscalePre_x4.glsl;~~/shaders/anime4k/Upscale/Anime4K_Upscale_CNN_x2_M.glsl"
+        )),
+        KeyCode::Digit2 => Some((
+            "set",
+            "~~/shaders/anime4k/Restore/Anime4K_Clamp_Highlights.glsl;~~/shaders/anime4k/Upscale/Anime4K_Upscale_Denoise_CNN_x2_VL.glsl;~~/shaders/anime4k/Restore/Anime4K_AutoDownscalePre_x2.glsl;~~/shaders/anime4k/Restore/Anime4K_AutoDownscalePre_x4.glsl;~~/shaders/anime4k/Upscale/Anime4K_Upscale_CNN_x2_M.glsl"
+        )),
+        KeyCode::Digit3 => Some((
+            "set",
+            "~~/shaders/anime4k/Restore/Anime4K_Clamp_Highlights.glsl;~~/shaders/anime4k/Upscale/Anime4K_Upscale_CNN_x2_VL.glsl;~~/shaders/anime4k/Restore/Anime4K_AutoDownscalePre_x2.glsl;~~/shaders/anime4k/Restore/Anime4K_AutoDownscalePre_x4.glsl;~~/shaders/anime4k/Upscale/Anime4K_Upscale_CNN_x2_M.glsl"
+        )),
+        KeyCode::Digit4 => Some((
+            "set",
+            "~~/shaders/anime4k/Restore/Anime4K_Clamp_Highlights.glsl;~~/shaders/anime4k/Restore/Anime4K_Restore_CNN_M.glsl;~~/shaders/anime4k/Upscale/Anime4K_Upscale_CNN_x2_M.glsl;~~/shaders/anime4k/Restore/Anime4K_AutoDownscalePre_x2.glsl;~~/shaders/anime4k/Restore/Anime4K_AutoDownscalePre_x4.glsl;~~/shaders/anime4k/Upscale/Anime4K_Upscale_CNN_x2_M.glsl"
+        )),
+        KeyCode::Digit5 => Some((
+            "set",
+            "~~/shaders/anime4k/Restore/Anime4K_Clamp_Highlights.glsl;~~/shaders/anime4k/Upscale/Anime4K_Upscale_Denoise_CNN_x2_M.glsl;~~/shaders/anime4k/Restore/Anime4K_AutoDownscalePre_x2.glsl;~~/shaders/anime4k/Restore/Anime4K_AutoDownscalePre_x4.glsl;~~/shaders/anime4k/Upscale/Anime4K_Upscale_CNN_x2_M.glsl"
+        )),
+        KeyCode::Digit6 => Some((
+            "set",
+            "~~/shaders/anime4k/Restore/Anime4K_Clamp_Highlights.glsl;~~/shaders/anime4k/Upscale/Anime4K_Upscale_CNN_x2_M.glsl;~~/shaders/anime4k/Restore/Anime4K_AutoDownscalePre_x2.glsl;~~/shaders/anime4k/Restore/Anime4K_AutoDownscalePre_x4.glsl;~~/shaders/anime4k/Upscale/Anime4K_Upscale_CNN_x2_M.glsl"
+        )),
+        _ => None,
+    }
+}
+
 fn main() -> ExitCode {
     tracing_subscriber::fmt::init();
 
     let args = Args::parse();
-    let config = Config::new();
+    let mut config = Config::new();
 
     let mut webview = WebView::new(config.webview);
     if webview.should_exit() {
@@ -76,7 +111,13 @@ fn main() -> ExitCode {
 
     let tray = Tray::new(config.tray);
     let mut app = App::new();
-    let mut player = Player::new();
+    let mut player = Player::new(config.player);
+
+    // Discord needs to be in an Rc<RefCell<>> to be accessed from closures
+    use std::cell::RefCell;
+    let discord = Rc::new(RefCell::new(Discord::new(config.discord.enabled)));
+    let discord_clone = discord.clone();
+    let discord_clone2 = discord.clone();
 
     let mut event_loop = EventLoop::<UserEvent>::with_user_event()
         .build()
@@ -193,6 +234,33 @@ fn main() -> ExitCode {
                 webview.touch_input(touch);
             }
             AppEvent::KeyboardInput((key_event, modifiers)) => {
+                // Intercept Ctrl+0-6 for Anime4K shader switching
+                if modifiers.control_key() && key_event.state.is_pressed() {
+                    if let PhysicalKey::Code(key_code) = key_event.physical_key {
+                        if let Some((action, _label)) = get_anime4k_shader_command(key_code) {
+                            if action == "clr" {
+                                println!("🎨 [ANIME4K] Clearing all shaders");
+                                player.command("change-list".to_string(), vec!["glsl-shaders".to_string(), "clr".to_string(), "".to_string()]);
+                                player.command("show-text".to_string(), vec!["Shaders cleared".to_string()]);
+                            } else {
+                                let shader_list = _label;
+                                let mode_label = match key_code {
+                                    KeyCode::Digit1 => "Anime4K: Mode A (HQ)",
+                                    KeyCode::Digit2 => "Anime4K: Mode B (HQ+Denoise)",
+                                    KeyCode::Digit3 => "Anime4K: Mode C (Fast)",
+                                    KeyCode::Digit4 => "Anime4K: Mode A+A (HQ)",
+                                    KeyCode::Digit5 => "Anime4K: Mode B+B (HQ+Denoise)",
+                                    KeyCode::Digit6 => "Anime4K: Mode C+A (Fast)",
+                                    _ => "Anime4K",
+                                };
+                                println!("🎨 [ANIME4K] Activating: {}", mode_label);
+                                player.command("change-list".to_string(), vec!["glsl-shaders".to_string(), "set".to_string(), shader_list.to_string()]);
+                                player.command("show-text".to_string(), vec![mode_label.to_string()]);
+                            }
+                            return; // Don't forward to webview
+                        }
+                    }
+                }
                 webview.keyboard_input(key_event, modifiers);
             }
             AppEvent::FileHover((path, state)) => {
@@ -212,6 +280,10 @@ fn main() -> ExitCode {
                 webview.dev_tools(args.dev);
             }
             WebViewEvent::Loaded => {
+                // Proactively send Init message to tell web UI we're a shell (enables MPV)
+                let init_message = ipc::create_response(IpcEvent::Init(1));
+                webview.post_message(init_message);
+
                 if let Some(deeplink) = &args.open
                     && deeplink.starts_with(URI_SCHEME)
                 {
@@ -258,6 +330,18 @@ fn main() -> ExitCode {
                     }
                     _ => {}
                 },
+                IpcEvent::DiscordPresence(args) => {
+                    discord_clone.borrow_mut().update_presence(args);
+                }
+                IpcEvent::DiscordToggle(enabled) => {
+                    discord_clone2.borrow_mut().set_enabled(enabled);
+                    // Save to config file
+                    let data_dir = dirs::data_dir()
+                        .expect("Failed to get data dir")
+                        .join(crate::constants::DATA_DIR);
+                    let mut discord_config = config::DiscordConfig::load(&data_dir);
+                    discord_config.set_enabled(enabled);
+                }
                 _ => {}
             }),
         });

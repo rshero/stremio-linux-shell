@@ -3,6 +3,8 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use serde::{Deserialize, Serialize};
+
 use crate::constants::DATA_DIR;
 
 pub struct Config {
@@ -10,6 +12,8 @@ pub struct Config {
     pub server: ServerConfig,
     pub webview: WebViewConfig,
     pub tray: TrayConfig,
+    pub player: PlayerConfig,
+    pub discord: DiscordConfig,
 }
 
 impl Config {
@@ -34,12 +38,16 @@ impl Config {
         let server = ServerConfig::new(current_dir);
         let webview = WebViewConfig::new(&data_dir);
         let tray = TrayConfig::new(&runtime_dir);
+        let player = PlayerConfig::new(&data_dir);
+        let discord = DiscordConfig::load(&data_dir);
 
         Self {
             instance,
             server,
             webview,
             tray,
+            player,
+            discord,
         }
     }
 }
@@ -117,5 +125,64 @@ impl TrayConfig {
         let icon_path = runtime_path.join(TRAY_ICON_DIR);
 
         Self { icon_path }
+    }
+}
+
+pub struct PlayerConfig {
+    pub data_dir: PathBuf,
+}
+
+impl PlayerConfig {
+    pub fn new(data_dir: &Path) -> Self {
+        Self {
+            data_dir: data_dir.to_path_buf(),
+        }
+    }
+}
+
+const DISCORD_CONFIG_FILE: &str = "discord.json";
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct DiscordConfig {
+    pub enabled: bool,
+    config_path: PathBuf,
+}
+
+impl Default for DiscordConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true, // Enabled by default
+            config_path: PathBuf::new(),
+        }
+    }
+}
+
+impl DiscordConfig {
+    pub fn load(data_dir: &Path) -> Self {
+        let config_path = data_dir.join(DISCORD_CONFIG_FILE);
+
+        if config_path.exists() {
+            if let Ok(content) = fs::read_to_string(&config_path) {
+                if let Ok(mut config) = serde_json::from_str::<DiscordConfig>(&content) {
+                    config.config_path = config_path;
+                    return config;
+                }
+            }
+        }
+
+        let mut config = Self::default();
+        config.config_path = config_path;
+        config.save();
+        config
+    }
+
+    pub fn save(&self) {
+        let content = serde_json::to_string_pretty(self).unwrap();
+        let _ = fs::write(&self.config_path, content);
+    }
+
+    pub fn set_enabled(&mut self, enabled: bool) {
+        self.enabled = enabled;
+        self.save();
     }
 }

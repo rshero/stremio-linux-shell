@@ -1,7 +1,10 @@
+mod config;
 mod constants;
 
 use std::{env, ffi::CString, os::raw::c_void, rc::Rc};
 
+use crate::config::PlayerConfig;
+use config::MpvConfig;
 use constants::{BOOL_PROPERTIES, FLOAT_PROPERTIES, STRING_PROPERTIES};
 use crossbeam_channel::{Receiver, Sender, unbounded};
 use glutin::{display::Display, prelude::GlDisplay};
@@ -148,11 +151,17 @@ pub struct Player {
 }
 
 impl Player {
-    pub fn new() -> Self {
+    pub fn new(player_config: PlayerConfig) -> Self {
         // Required for libmpv to work alongside gtk
         unsafe {
             setlocale(LC_NUMERIC, c"C".as_ptr());
         }
+
+        // Initialize MPV config (creates config directory and installs defaults)
+        let mpv_config = MpvConfig::new(&player_config.data_dir)
+            .expect("Failed to initialize MPV config");
+
+        println!("🎬 MPV Enhanced - Config loaded from: {}", mpv_config.config_dir_str());
 
         let log = env::var("RUST_LOG");
         let msg_level = match log {
@@ -160,11 +169,14 @@ impl Player {
             _ => "all=no",
         };
 
-        let mpv = Mpv::with_initializer(|init| {
+        let config_dir = mpv_config.config_dir_str();
+
+        let mpv = Mpv::with_initializer(move |init| {
             init.set_property("vo", "libmpv")?;
             init.set_property("video-timing-offset", "0")?;
             init.set_property("terminal", "yes")?;
             init.set_property("msg-level", msg_level)?;
+            init.set_property("config-dir", config_dir.as_str())?;
             Ok(())
         })
         .expect("Failed to create mpv");

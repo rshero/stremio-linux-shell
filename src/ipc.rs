@@ -25,6 +25,8 @@ pub enum IpcEvent {
     OpenMedia(String),
     OpenExternal(String),
     Mpv(IpcEventMpv),
+    DiscordPresence(Vec<String>),
+    DiscordToggle(bool),
 }
 
 #[derive(Deserialize, Debug)]
@@ -102,6 +104,29 @@ impl TryFrom<IpcMessageRequest> for IpcEvent {
                             "quit" => Ok(IpcEvent::Quit),
                             _ => Err("Unknown method"),
                         },
+                    }
+                }
+                None => Err("Missing args"),
+            },
+            7 => match value.args {
+                Some(args) => {
+                    let args: Vec<Value> = serde_json::from_value(args).expect("Invalid arguments");
+                    let name = args.first().and_then(Value::as_str).ok_or("Invalid name")?;
+
+                    match name {
+                        "discord-presence" => {
+                            let presence_args: Vec<String> = args
+                                .iter()
+                                .skip(1)
+                                .filter_map(|v| v.as_str().map(|s| s.to_string()))
+                                .collect();
+                            Ok(IpcEvent::DiscordPresence(presence_args))
+                        }
+                        "discord-toggle" => {
+                            let enabled = args.get(1).and_then(Value::as_bool).unwrap_or(false);
+                            Ok(IpcEvent::DiscordToggle(enabled))
+                        }
+                        _ => Err("Unknown method"),
                     }
                 }
                 None => Err("Missing args"),

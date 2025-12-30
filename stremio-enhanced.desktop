@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Stremio Enhanced
+GenericName=Media Center
+Comment=Enhanced Stremio with MPV, Anime4K, Discord RPC & ThumbFast
+Icon=com.stremio.Stremio
+Exec=stremio-enhanced %U
+Terminal=false
+Categories=AudioVideo;Video;Player;TV;
+MimeType=x-scheme-handler/stremio;
+Keywords=stream;movie;tv;anime;torrent;
+StartupWMClass=stremio-linux-shell
