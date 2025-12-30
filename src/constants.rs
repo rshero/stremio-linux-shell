@@ -3,7 +3,7 @@ pub const APP_ID: &str = match cfg!(debug_assertions) {
     false => "com.stremio.Stremio",
 };
 
-pub const APP_NAME: &str = "Stremio";
+pub const APP_NAME: &str = "Stremio Enhanced";
 pub const WINDOW_SIZE: (i32, i32) = (1700, 1050);
 // Use custom Stremio Web with enhancements
 pub const STARTUP_URL: &str = "https://stremio-web-zeta.vercel.app";

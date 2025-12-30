@@ -29,7 +29,7 @@ use winit::{
     keyboard::ModifiersState,
     platform::wayland::WindowAttributesExtWayland,
     raw_window_handle::{HasDisplayHandle, HasWindowHandle},
-    window::{CursorIcon, Fullscreen, UserAttentionType, Window, WindowAttributes},
+    window::{CursorIcon, Fullscreen, Icon as WindowIcon, UserAttentionType, Window, WindowAttributes},
 };
 
 use crate::{
@@ -41,6 +41,12 @@ use crate::{
 };
 
 const CONTEXT_API: ContextApi = ContextApi::OpenGl(Some(Version::new(3, 3)));
+
+// Embed window icon at compile time (128x128 for better compatibility)
+const WINDOW_ICON: &[u8] = include_bytes!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/data/icons/window-icon-128.png"
+));
 
 #[derive(Debug)]
 pub enum AppEvent {
@@ -91,7 +97,10 @@ impl App {
     }
 
     pub fn create_window(&mut self, event_loop: &ActiveEventLoop) {
-        let window_attributes = WindowAttributes::default()
+        // Load window icon
+        let window_icon = Self::load_window_icon();
+
+        let mut window_attributes = WindowAttributes::default()
             .with_title(APP_NAME)
             .with_name(APP_ID, APP_ID)
             .with_decorations(true)
@@ -99,6 +108,11 @@ impl App {
             .with_maximized(self.maximized)
             .with_min_inner_size(PhysicalSize::new(900, 600))
             .with_inner_size(PhysicalSize::<u32>::from(WINDOW_SIZE));
+
+        // Set window icon if loaded successfully
+        if let Some(icon) = window_icon {
+            window_attributes = window_attributes.with_window_icon(Some(icon));
+        }
 
         let (window, config) = utils::create_window(event_loop, window_attributes);
         let surface = utils::create_surface(&config, &window);
@@ -233,6 +247,43 @@ impl App {
         }
 
         None
+    }
+
+    fn load_window_icon() -> Option<WindowIcon> {
+        use image::ImageReader;
+        use std::io::Cursor;
+
+        println!("🔍 Loading window icon ({} bytes)...", WINDOW_ICON.len());
+
+        // Load embedded PNG icon
+        match ImageReader::new(Cursor::new(WINDOW_ICON))
+            .with_guessed_format()
+        {
+            Ok(reader) => match reader.decode() {
+                Ok(img) => {
+                    let rgba = img.to_rgba8();
+                    let (width, height) = rgba.dimensions();
+                    match WindowIcon::from_rgba(rgba.into_raw(), width, height) {
+                        Ok(icon) => {
+                            println!("✅ Window icon loaded: {}x{}", width, height);
+                            Some(icon)
+                        }
+                        Err(e) => {
+                            eprintln!("❌ Failed to create window icon: {:?}", e);
+                            None
+                        }
+                    }
+                }
+                Err(e) => {
+                    eprintln!("❌ Failed to decode icon: {:?}", e);
+                    None
+                }
+            },
+            Err(e) => {
+                eprintln!("❌ Failed to read icon: {:?}", e);
+                None
+            }
+        }
     }
 }
 

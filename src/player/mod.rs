@@ -152,6 +152,10 @@ pub struct Player {
 
 impl Player {
     pub fn new(player_config: PlayerConfig) -> Self {
+        // Set C locale for MPV (required)
+        unsafe {
+            libc::setlocale(libc::LC_NUMERIC, b"C\0".as_ptr() as *const _);
+        }
         // Required for libmpv to work alongside gtk
         unsafe {
             setlocale(LC_NUMERIC, c"C".as_ptr());

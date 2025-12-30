@@ -1,19 +1,13 @@
 #!/bin/bash
 set -e
 
-# Installation script for Stremio Enhanced
+# Installation script for Stremio Enhanced (User-wide)
 echo "🎬 Installing Stremio Enhanced..."
 
-INSTALL_DIR="/opt/stremio-enhanced"
-BIN_DIR="/usr/local/bin"
-DESKTOP_FILE="/usr/share/applications/stremio-enhanced.desktop"
-ICON_DIR="/usr/share/icons/hicolor"
-
-# Check if running as root
-if [ "$EUID" -ne 0 ]; then
-    echo "❌ Please run as root (use sudo)"
-    exit 1
-fi
+INSTALL_DIR="$HOME/.local/share/stremio-enhanced"
+BIN_DIR="$HOME/.local/bin"
+DESKTOP_FILE="$HOME/.local/share/applications/com.stremio.Stremio.desktop"
+ICON_DIR="$HOME/.local/share/icons/hicolor"
 
 # Create installation directory
 echo "📁 Creating installation directory..."
@@ -29,22 +23,41 @@ cp -r data/mpv-configs/portable_config "$INSTALL_DIR/mpv-configs/"
 
 # Create launcher script
 echo "🔧 Creating launcher..."
-cat > "$BIN_DIR/stremio-enhanced" <<'EOF'
+mkdir -p "$BIN_DIR"
+cat > "$BIN_DIR/stremio-enhanced" <<EOF
 #!/bin/bash
-export LD_LIBRARY_PATH="/opt/stremio-enhanced/cef:${LD_LIBRARY_PATH}"
-cd /opt/stremio-enhanced
-exec ./stremio-linux-shell "$@"
+export LD_LIBRARY_PATH="$INSTALL_DIR/cef:\${LD_LIBRARY_PATH}"
+cd "$INSTALL_DIR"
+exec ./stremio-linux-shell "\$@"
 EOF
 
 chmod +x "$BIN_DIR/stremio-enhanced"
 
+# Install icons
+echo "🎨 Installing icons..."
+for size in 16 32 48 128 256 512; do
+    mkdir -p "$ICON_DIR/${size}x${size}/apps"
+    cp "data/icons/hicolor/${size}x${size}/apps/stremio-enhanced.png" \
+       "$ICON_DIR/${size}x${size}/apps/"
+done
+
+# Install SVG icon for better scaling
+mkdir -p "$ICON_DIR/scalable/apps"
+cp "data/icons/hicolor/scalable/apps/stremio-enhanced.svg" \
+   "$ICON_DIR/scalable/apps/"
+
 # Install desktop entry
 echo "🖥️  Installing desktop entry..."
+mkdir -p "$(dirname "$DESKTOP_FILE")"
 cp stremio-enhanced.desktop "$DESKTOP_FILE"
 
-# Update desktop database
+# Update caches
 if command -v update-desktop-database &> /dev/null; then
-    update-desktop-database /usr/share/applications
+    update-desktop-database "$HOME/.local/share/applications"
+fi
+
+if command -v gtk-update-icon-cache &> /dev/null; then
+    gtk-update-icon-cache -f -t "$ICON_DIR" || true
 fi
 
 echo "✅ Installation complete!"
