@@ -28,7 +28,7 @@ jobs:
             libmpv-dev \
             libgtk-3-dev \
             libappindicator3-dev \
-            libasound2 \
+            libasound2t64 \
             file \
             wget
 
