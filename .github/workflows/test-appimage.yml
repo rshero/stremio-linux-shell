@@ -32,6 +32,22 @@ jobs:
             file \
             wget
 
+      - name: Download Anime4K shaders and ThumbFast
+        run: |
+          # Download Anime4K shaders
+          mkdir -p data/mpv-configs/shaders
+          wget -q https://github.com/bloc97/Anime4K/archive/refs/heads/master.zip -O anime4k.zip
+          unzip -q anime4k.zip
+          mv Anime4K-master/glsl data/mpv-configs/shaders/anime4k
+          rm -rf anime4k.zip Anime4K-master
+
+          # Download ThumbFast
+          mkdir -p data/mpv-configs/portable_config/{scripts,script-opts}
+          wget -q https://raw.githubusercontent.com/po5/thumbfast/master/thumbfast.lua \
+            -O data/mpv-configs/portable_config/scripts/thumbfast.lua
+          wget -q https://raw.githubusercontent.com/po5/thumbfast/master/thumbfast.conf \
+            -O data/mpv-configs/portable_config/script-opts/thumbfast.conf
+
       - name: Build release binary
         run: cargo build --release
 

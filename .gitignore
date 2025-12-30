@@ -2,7 +2,16 @@
 /target
 /vendor
 *.log
-shaders
 *.exe
-mpv-configs
-icons
+
+# Ignore large shader directory but keep essential configs
+data/mpv-configs/shaders/
+data/mpv-configs/portable_config/
+
+# Keep essential config files (needed at compile time)
+!data/mpv-configs/*.conf
+
+# Ignore icons except the ones needed at compile time
+data/icons/*
+!data/icons/window-icon-128.png
+!data/icons/hicolor/
