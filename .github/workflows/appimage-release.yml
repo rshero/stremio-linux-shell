@@ -190,7 +190,13 @@ jobs:
 
       - name: Extract version
         id: version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/}
+          else
+            VERSION=${GITHUB_SHA::7}
+          fi
+          echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
 
       - name: Create or Update Release
         uses: softprops/action-gh-release@v1
