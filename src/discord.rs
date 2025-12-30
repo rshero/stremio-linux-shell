@@ -1,7 +1,7 @@
 use anyhow::Result;
 use discord_rich_presence::{
-    activity::{Activity, Assets, Button, Timestamps},
     DiscordIpc, DiscordIpcClient,
+    activity::{Activity, Assets, Button, Timestamps},
 };
 use std::time::{SystemTime, UNIX_EPOCH};
 use tracing::{error, info};
@@ -134,21 +134,14 @@ impl Discord {
                         .large_image(&args[7])
                         .large_text(&args[2])
                         .small_image(thumb)
-                        .small_text(&args[5])
+                        .small_text(&args[5]),
                 );
             } else {
-                activity = activity.assets(
-                    Assets::new()
-                        .large_image(&args[7])
-                        .large_text(&args[2])
-                );
+                activity =
+                    activity.assets(Assets::new().large_image(&args[7]).large_text(&args[2]));
             }
         } else {
-            activity = activity.assets(
-                Assets::new()
-                    .large_image(&args[7])
-                    .large_text(&args[2])
-            );
+            activity = activity.assets(Assets::new().large_image(&args[7]).large_text(&args[2]));
         }
 
         // Add buttons
@@ -181,11 +174,7 @@ impl Discord {
         let activity = Activity::new()
             .details(&args[2])
             .state(state)
-            .assets(
-                Assets::new()
-                    .large_image(&args[3])
-                    .large_text(&args[2])
-            );
+            .assets(Assets::new().large_image(&args[3]).large_text(&args[2]));
 
         self.update_activity(activity);
     }

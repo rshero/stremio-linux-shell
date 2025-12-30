@@ -70,7 +70,7 @@ impl WebView {
             cache_path: config.cache_dir.to_str().unwrap().into(),
             log_file: config.log_file.to_str().unwrap().into(),
             log_severity: LogSeverity::from(cef_log_severity_t::LOGSEVERITY_VERBOSE),
-            user_agent: "StremioShell/1.0.0".into(),  // Custom user agent like community v5
+            user_agent: "StremioShell/1.0.0".into(), // Custom user agent like community v5
             ..Default::default()
         };
 

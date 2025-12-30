@@ -162,10 +162,13 @@ impl Player {
         }
 
         // Initialize MPV config (creates config directory and installs defaults)
-        let mpv_config = MpvConfig::new(&player_config.data_dir)
-            .expect("Failed to initialize MPV config");
+        let mpv_config =
+            MpvConfig::new(&player_config.data_dir).expect("Failed to initialize MPV config");
 
-        println!("🎬 MPV Enhanced - Config loaded from: {}", mpv_config.config_dir_str());
+        println!(
+            "🎬 MPV Enhanced - Config loaded from: {}",
+            mpv_config.config_dir_str()
+        );
 
         let log = env::var("RUST_LOG");
         let msg_level = match log {

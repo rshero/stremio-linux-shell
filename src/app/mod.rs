@@ -29,7 +29,9 @@ use winit::{
     keyboard::ModifiersState,
     platform::wayland::WindowAttributesExtWayland,
     raw_window_handle::{HasDisplayHandle, HasWindowHandle},
-    window::{CursorIcon, Fullscreen, Icon as WindowIcon, UserAttentionType, Window, WindowAttributes},
+    window::{
+        CursorIcon, Fullscreen, Icon as WindowIcon, UserAttentionType, Window, WindowAttributes,
+    },
 };
 
 use crate::{
@@ -256,9 +258,7 @@ impl App {
         println!("🔍 Loading window icon ({} bytes)...", WINDOW_ICON.len());
 
         // Load embedded PNG icon
-        match ImageReader::new(Cursor::new(WINDOW_ICON))
-            .with_guessed_format()
-        {
+        match ImageReader::new(Cursor::new(WINDOW_ICON)).with_guessed_format() {
             Ok(reader) => match reader.decode() {
                 Ok(img) => {
                     let rgba = img.to_rgba8();

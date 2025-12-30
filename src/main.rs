@@ -56,27 +56,27 @@ fn get_anime4k_shader_command(key_code: KeyCode) -> Option<(&'static str, &'stat
         KeyCode::Digit0 => Some(("clr", "Shaders cleared")),
         KeyCode::Digit1 => Some((
             "set",
-            "~~/shaders/anime4k/Restore/Anime4K_Clamp_Highlights.glsl;~~/shaders/anime4k/Restore/Anime4K_Restore_CNN_VL.glsl;~~/shaders/anime4k/Upscale/Anime4K_Upscale_CNN_x2_VL.glsl;~~/shaders/anime4k/Restore/Anime4K_AutoDownscalePre_x2.glsl;~~/shaders/anime4k/Restore/Anime4K_AutoDownscalePre_x4.glsl;~~/shaders/anime4k/Upscale/Anime4K_Upscale_CNN_x2_M.glsl"
+            "~~/shaders/anime4k/Restore/Anime4K_Clamp_Highlights.glsl;~~/shaders/anime4k/Restore/Anime4K_Restore_CNN_VL.glsl;~~/shaders/anime4k/Upscale/Anime4K_Upscale_CNN_x2_VL.glsl;~~/shaders/anime4k/Restore/Anime4K_AutoDownscalePre_x2.glsl;~~/shaders/anime4k/Restore/Anime4K_AutoDownscalePre_x4.glsl;~~/shaders/anime4k/Upscale/Anime4K_Upscale_CNN_x2_M.glsl",
         )),
         KeyCode::Digit2 => Some((
             "set",
-            "~~/shaders/anime4k/Restore/Anime4K_Clamp_Highlights.glsl;~~/shaders/anime4k/Upscale/Anime4K_Upscale_Denoise_CNN_x2_VL.glsl;~~/shaders/anime4k/Restore/Anime4K_AutoDownscalePre_x2.glsl;~~/shaders/anime4k/Restore/Anime4K_AutoDownscalePre_x4.glsl;~~/shaders/anime4k/Upscale/Anime4K_Upscale_CNN_x2_M.glsl"
+            "~~/shaders/anime4k/Restore/Anime4K_Clamp_Highlights.glsl;~~/shaders/anime4k/Upscale/Anime4K_Upscale_Denoise_CNN_x2_VL.glsl;~~/shaders/anime4k/Restore/Anime4K_AutoDownscalePre_x2.glsl;~~/shaders/anime4k/Restore/Anime4K_AutoDownscalePre_x4.glsl;~~/shaders/anime4k/Upscale/Anime4K_Upscale_CNN_x2_M.glsl",
         )),
         KeyCode::Digit3 => Some((
             "set",
-            "~~/shaders/anime4k/Restore/Anime4K_Clamp_Highlights.glsl;~~/shaders/anime4k/Upscale/Anime4K_Upscale_CNN_x2_VL.glsl;~~/shaders/anime4k/Restore/Anime4K_AutoDownscalePre_x2.glsl;~~/shaders/anime4k/Restore/Anime4K_AutoDownscalePre_x4.glsl;~~/shaders/anime4k/Upscale/Anime4K_Upscale_CNN_x2_M.glsl"
+            "~~/shaders/anime4k/Restore/Anime4K_Clamp_Highlights.glsl;~~/shaders/anime4k/Upscale/Anime4K_Upscale_CNN_x2_VL.glsl;~~/shaders/anime4k/Restore/Anime4K_AutoDownscalePre_x2.glsl;~~/shaders/anime4k/Restore/Anime4K_AutoDownscalePre_x4.glsl;~~/shaders/anime4k/Upscale/Anime4K_Upscale_CNN_x2_M.glsl",
         )),
         KeyCode::Digit4 => Some((
             "set",
-            "~~/shaders/anime4k/Restore/Anime4K_Clamp_Highlights.glsl;~~/shaders/anime4k/Restore/Anime4K_Restore_CNN_M.glsl;~~/shaders/anime4k/Upscale/Anime4K_Upscale_CNN_x2_M.glsl;~~/shaders/anime4k/Restore/Anime4K_AutoDownscalePre_x2.glsl;~~/shaders/anime4k/Restore/Anime4K_AutoDownscalePre_x4.glsl;~~/shaders/anime4k/Upscale/Anime4K_Upscale_CNN_x2_M.glsl"
+            "~~/shaders/anime4k/Restore/Anime4K_Clamp_Highlights.glsl;~~/shaders/anime4k/Restore/Anime4K_Restore_CNN_M.glsl;~~/shaders/anime4k/Upscale/Anime4K_Upscale_CNN_x2_M.glsl;~~/shaders/anime4k/Restore/Anime4K_AutoDownscalePre_x2.glsl;~~/shaders/anime4k/Restore/Anime4K_AutoDownscalePre_x4.glsl;~~/shaders/anime4k/Upscale/Anime4K_Upscale_CNN_x2_M.glsl",
         )),
         KeyCode::Digit5 => Some((
             "set",
-            "~~/shaders/anime4k/Restore/Anime4K_Clamp_Highlights.glsl;~~/shaders/anime4k/Upscale/Anime4K_Upscale_Denoise_CNN_x2_M.glsl;~~/shaders/anime4k/Restore/Anime4K_AutoDownscalePre_x2.glsl;~~/shaders/anime4k/Restore/Anime4K_AutoDownscalePre_x4.glsl;~~/shaders/anime4k/Upscale/Anime4K_Upscale_CNN_x2_M.glsl"
+            "~~/shaders/anime4k/Restore/Anime4K_Clamp_Highlights.glsl;~~/shaders/anime4k/Upscale/Anime4K_Upscale_Denoise_CNN_x2_M.glsl;~~/shaders/anime4k/Restore/Anime4K_AutoDownscalePre_x2.glsl;~~/shaders/anime4k/Restore/Anime4K_AutoDownscalePre_x4.glsl;~~/shaders/anime4k/Upscale/Anime4K_Upscale_CNN_x2_M.glsl",
         )),
         KeyCode::Digit6 => Some((
             "set",
-            "~~/shaders/anime4k/Restore/Anime4K_Clamp_Highlights.glsl;~~/shaders/anime4k/Upscale/Anime4K_Upscale_CNN_x2_M.glsl;~~/shaders/anime4k/Restore/Anime4K_AutoDownscalePre_x2.glsl;~~/shaders/anime4k/Restore/Anime4K_AutoDownscalePre_x4.glsl;~~/shaders/anime4k/Upscale/Anime4K_Upscale_CNN_x2_M.glsl"
+            "~~/shaders/anime4k/Restore/Anime4K_Clamp_Highlights.glsl;~~/shaders/anime4k/Upscale/Anime4K_Upscale_CNN_x2_M.glsl;~~/shaders/anime4k/Restore/Anime4K_AutoDownscalePre_x2.glsl;~~/shaders/anime4k/Restore/Anime4K_AutoDownscalePre_x4.glsl;~~/shaders/anime4k/Upscale/Anime4K_Upscale_CNN_x2_M.glsl",
         )),
         _ => None,
     }
@@ -240,8 +240,18 @@ fn main() -> ExitCode {
                         if let Some((action, _label)) = get_anime4k_shader_command(key_code) {
                             if action == "clr" {
                                 println!("🎨 [ANIME4K] Clearing all shaders");
-                                player.command("change-list".to_string(), vec!["glsl-shaders".to_string(), "clr".to_string(), "".to_string()]);
-                                player.command("show-text".to_string(), vec!["Shaders cleared".to_string()]);
+                                player.command(
+                                    "change-list".to_string(),
+                                    vec![
+                                        "glsl-shaders".to_string(),
+                                        "clr".to_string(),
+                                        "".to_string(),
+                                    ],
+                                );
+                                player.command(
+                                    "show-text".to_string(),
+                                    vec!["Shaders cleared".to_string()],
+                                );
                             } else {
                                 let shader_list = _label;
                                 let mode_label = match key_code {
@@ -254,8 +264,16 @@ fn main() -> ExitCode {
                                     _ => "Anime4K",
                                 };
                                 println!("🎨 [ANIME4K] Activating: {}", mode_label);
-                                player.command("change-list".to_string(), vec!["glsl-shaders".to_string(), "set".to_string(), shader_list.to_string()]);
-                                player.command("show-text".to_string(), vec![mode_label.to_string()]);
+                                player.command(
+                                    "change-list".to_string(),
+                                    vec![
+                                        "glsl-shaders".to_string(),
+                                        "set".to_string(),
+                                        shader_list.to_string(),
+                                    ],
+                                );
+                                player
+                                    .command("show-text".to_string(), vec![mode_label.to_string()]);
                             }
                             return; // Don't forward to webview
                         }

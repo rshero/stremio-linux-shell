@@ -19,8 +19,7 @@ impl MpvConfig {
         let config_dir = data_dir.join(MPV_CONFIG_DIR);
 
         // Create directory structure
-        fs::create_dir_all(&config_dir)
-            .context("Failed to create MPV config directory")?;
+        fs::create_dir_all(&config_dir).context("Failed to create MPV config directory")?;
 
         fs::create_dir_all(config_dir.join("scripts"))
             .context("Failed to create scripts directory")?;
@@ -78,8 +77,8 @@ impl MpvConfig {
         // In development, data/ is in the project root
         // In production, we'll need to include shaders with the binary
         let shader_sources = [
-            exe_dir.join("../../data/mpv-configs/shaders/anime4k"),  // Dev path
-            exe_dir.join("shaders/anime4k"),                         // Production path
+            exe_dir.join("../../data/mpv-configs/shaders/anime4k"), // Dev path
+            exe_dir.join("shaders/anime4k"),                        // Production path
         ];
 
         for source in &shader_sources {
@@ -109,8 +108,8 @@ impl MpvConfig {
 
         // Try to copy from bundled data directory
         let source_paths = [
-            exe_dir.join("../../data/mpv-configs/portable_config"),  // Dev path
-            exe_dir.join("mpv-configs/portable_config"),              // Production path
+            exe_dir.join("../../data/mpv-configs/portable_config"), // Dev path
+            exe_dir.join("mpv-configs/portable_config"),            // Production path
         ];
 
         for source in &source_paths {
