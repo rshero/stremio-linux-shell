@@ -30,6 +30,9 @@ use crate::{
     shared::types::{Cursor, MouseState},
 };
 
+use arboard::Clipboard;
+use std::process::Command;
+
 static SENDER: OnceCell<Sender<WebViewEvent>> = OnceCell::new();
 static BROWSER: OnceCell<Browser> = OnceCell::new();
 
@@ -265,17 +268,22 @@ impl WebView {
                     false => cef_key_event_type_t::KEYEVENT_KEYUP.into(),
                 };
 
-                let modifiers = if modifiers.control_key() {
-                    cef_event_flags_t::EVENTFLAG_CONTROL_DOWN as u32
-                } else {
-                    cef_event_flags_t::EVENTFLAG_NONE as u32
-                };
+                let mut modifiers_flags = cef_event_flags_t::EVENTFLAG_NONE as u32;
+                if modifiers.control_key() {
+                    modifiers_flags |= cef_event_flags_t::EVENTFLAG_CONTROL_DOWN as u32;
+                }
+                if modifiers.shift_key() {
+                    modifiers_flags |= cef_event_flags_t::EVENTFLAG_SHIFT_DOWN as u32;
+                }
+                if modifiers.alt_key() {
+                    modifiers_flags |= cef_event_flags_t::EVENTFLAG_ALT_DOWN as u32;
+                }
 
                 let event = cef::KeyEvent {
                     type_: event_type,
                     windows_key_code,
                     native_key_code,
-                    modifiers,
+                    modifiers: modifiers_flags,
                     ..Default::default()
                 };
 
@@ -292,6 +300,99 @@ impl WebView {
                 };
 
                 host.send_key_event(Some(&event));
+            }
+        }
+    }
+
+    /// Try to read clipboard from KDE Klipper via DBus
+    fn try_klipper_clipboard() -> Option<String> {
+        // Try qdbus6 first (KDE Plasma 6)
+        if let Ok(output) = Command::new("qdbus6")
+            .args(&[
+                "org.kde.klipper",
+                "/klipper",
+                "org.kde.klipper.klipper.getClipboardContents",
+            ])
+            .output()
+        {
+            if output.status.success() {
+                let text = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                if !text.is_empty() {
+                    return Some(text);
+                }
+            }
+        }
+
+        // Try qdbus (KDE Plasma 5)
+        if let Ok(output) = Command::new("qdbus")
+            .args(&[
+                "org.kde.klipper",
+                "/klipper",
+                "getClipboardContents",
+            ])
+            .output()
+        {
+            if output.status.success() {
+                let text = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                if !text.is_empty() {
+                    return Some(text);
+                }
+            }
+        }
+
+        None
+    }
+
+    /// Paste text from system clipboard into CEF
+    /// This is needed because CEF in windowless mode doesn't automatically sync with system clipboard
+    pub fn paste_from_clipboard(&self) {
+        // Try multiple clipboard sources in order of priority
+        let clipboard_text = Self::try_klipper_clipboard()
+            .or_else(|| {
+                // Fall back to arboard for non-KDE environments
+                match Clipboard::new() {
+                    Ok(mut clipboard) => clipboard.get_text().ok(),
+                    Err(_) => None,
+                }
+            });
+
+        if let Some(text) = clipboard_text {
+            if let Some(main_frame) = self.main_frame() {
+                // Escape the text for JavaScript (handle quotes, newlines, etc.)
+                let escaped_text = text
+                    .replace('\\', "\\\\")
+                    .replace('\n', "\\n")
+                    .replace('\r', "\\r")
+                    .replace('\'', "\\'")
+                    .replace('"', "\\\"");
+
+                // Execute JavaScript to insert text at cursor position
+                let script = format!(
+                    "(function() {{
+                        const text = '{}';
+                        const result = document.execCommand('insertText', false, text);
+                        if (!result) {{
+                            // Fallback: Try to paste into active element
+                            const el = document.activeElement;
+                            if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) {{
+                                const start = el.selectionStart;
+                                const end = el.selectionEnd;
+                                const value = el.value || el.textContent || '';
+                                const newValue = value.substring(0, start) + text + value.substring(end);
+                                if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {{
+                                    el.value = newValue;
+                                }} else {{
+                                    el.textContent = newValue;
+                                }}
+                                el.selectionStart = el.selectionEnd = start + text.length;
+                                el.dispatchEvent(new Event('input', {{ bubbles: true }}));
+                            }}
+                        }}
+                    }})();",
+                    escaped_text
+                );
+                let code = CefString::from(script.as_str());
+                main_frame.execute_java_script(Some(&code), None, 0);
             }
         }
     }

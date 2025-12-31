@@ -165,6 +165,7 @@ fn main() -> ExitCode {
     let tray = Tray::new(config.tray);
     let mut app = App::new();
     let mut player = Player::new(config.player);
+    let mut is_playing = false; // Track if video is actively playing
 
     // Discord needs to be in an Rc<RefCell<>> to be accessed from closures
     use std::cell::RefCell;
@@ -287,6 +288,15 @@ fn main() -> ExitCode {
                 webview.touch_input(touch);
             }
             AppEvent::KeyboardInput((key_event, modifiers)) => {
+                // Intercept Ctrl+V for clipboard paste from system
+                // CEF in windowless mode doesn't automatically sync with system clipboard
+                if modifiers.control_key() && key_event.state.is_pressed() {
+                    if let PhysicalKey::Code(KeyCode::KeyV) = key_event.physical_key {
+                        webview.paste_from_clipboard();
+                        return; // Don't forward to CEF or webview
+                    }
+                }
+
                 // Intercept Ctrl+0-6 for Anime4K shader switching
                 if modifiers.control_key() && key_event.state.is_pressed() {
                     if let PhysicalKey::Code(key_code) = key_event.physical_key {
@@ -333,8 +343,8 @@ fn main() -> ExitCode {
                     }
                 }
 
-                // Forward all keypresses to MPV for input.conf bindings
-                if key_event.state.is_pressed() {
+                // Forward keypresses to MPV ONLY when video is playing
+                if is_playing && key_event.state.is_pressed() {
                     if let PhysicalKey::Code(key_code) = key_event.physical_key {
                         if let Some(mut mpv_key) = keycode_to_mpv_key(key_code) {
                             // Handle modifiers (MPV format: CTRL+s, Shift+g, etc.)
@@ -366,7 +376,6 @@ fn main() -> ExitCode {
                             }
 
                             // Send keypress to MPV (will trigger input.conf bindings)
-                            println!("⌨️  [MPV] Sending keypress: {}", mpv_key);
                             player.command("keypress".to_string(), vec![mpv_key]);
                         }
                     }
@@ -459,9 +468,13 @@ fn main() -> ExitCode {
 
         player.events(|event| match event {
             PlayerEvent::Start => {
+                is_playing = true;
+                println!("🎬 [PLAYER] Video started - MPV shortcuts enabled");
                 futures::executor::block_on(app.disable_idling());
             }
             PlayerEvent::Stop(error) => {
+                is_playing = false;
+                println!("⏹️  [PLAYER] Video stopped - MPV shortcuts disabled");
                 futures::executor::block_on(app.enable_idling());
 
                 let message = ipc::create_response(IpcEvent::Mpv(IpcEventMpv::Ended(error)));

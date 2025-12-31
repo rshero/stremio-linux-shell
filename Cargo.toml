@@ -11,6 +11,7 @@ offline-build = []
 
 [dependencies]
 anyhow = "1.0.98"
+arboard = "3.4.1"
 ashpd = { version = "0.11.0", features = ["async-std", "raw-window-handle", "raw_handle", "wayland"], default-features = false }
 bytes = "1.10.1"
 cef = { version = "138.0.21", git = "https://github.com/Stremio/cef-rs" }

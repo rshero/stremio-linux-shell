@@ -11,12 +11,9 @@ pub const URI_SCHEME: &str = "stremio://";
 pub const DATA_DIR: &str = "stremio";
 
 pub const CMD_SWITCHES: &[&str] = &[
+    // No special CEF switches needed - clipboard is handled via DBus/arboard
+    // GPU settings can be enabled here if needed:
     // "enable-begin-frame-scheduling",
     // "enable-gpu",
     // "enable-gpu-rasterization",
-    // "disable-frame-rate-limit",
-    // "disable-gpu-vsync",
-    // "disable-gpu-compositing",
-    // "disable-direct-composition",
-    // "disable-gpu",
 ];
