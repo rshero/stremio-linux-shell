@@ -1,4 +1,3 @@
-use anyhow::Result;
 use discord_rich_presence::{
     DiscordIpc, DiscordIpcClient,
     activity::{Activity, Assets, Button, Timestamps},
@@ -51,10 +50,6 @@ impl Discord {
                 let _ = client.close();
             }
         }
-    }
-
-    pub fn is_enabled(&self) -> bool {
-        self.enabled
     }
 
     pub fn update_presence(&mut self, args: Vec<String>) {

@@ -86,7 +86,7 @@ fn main() -> ExitCode {
     tracing_subscriber::fmt::init();
 
     let args = Args::parse();
-    let mut config = Config::new();
+    let config = Config::new();
 
     let mut webview = WebView::new(config.webview);
     if webview.should_exit() {
