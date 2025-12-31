@@ -50,6 +50,59 @@ struct Args {
     no_server: bool,
 }
 
+/// Converts KeyCode to MPV key name for input.conf bindings
+fn keycode_to_mpv_key(key_code: KeyCode) -> Option<String> {
+    let key_str = match key_code {
+        // Letters
+        KeyCode::KeyA => "a", KeyCode::KeyB => "b", KeyCode::KeyC => "c", KeyCode::KeyD => "d",
+        KeyCode::KeyE => "e", KeyCode::KeyF => "f", KeyCode::KeyG => "g", KeyCode::KeyH => "h",
+        KeyCode::KeyI => "i", KeyCode::KeyJ => "j", KeyCode::KeyK => "k", KeyCode::KeyL => "l",
+        KeyCode::KeyM => "m", KeyCode::KeyN => "n", KeyCode::KeyO => "o", KeyCode::KeyP => "p",
+        KeyCode::KeyQ => "q", KeyCode::KeyR => "r", KeyCode::KeyS => "s", KeyCode::KeyT => "t",
+        KeyCode::KeyU => "u", KeyCode::KeyV => "v", KeyCode::KeyW => "w", KeyCode::KeyX => "x",
+        KeyCode::KeyY => "y", KeyCode::KeyZ => "z",
+        // Numbers
+        KeyCode::Digit0 => "0", KeyCode::Digit1 => "1", KeyCode::Digit2 => "2", KeyCode::Digit3 => "3",
+        KeyCode::Digit4 => "4", KeyCode::Digit5 => "5", KeyCode::Digit6 => "6", KeyCode::Digit7 => "7",
+        KeyCode::Digit8 => "8", KeyCode::Digit9 => "9",
+        // Function keys
+        KeyCode::F1 => "F1", KeyCode::F2 => "F2", KeyCode::F3 => "F3", KeyCode::F4 => "F4",
+        KeyCode::F5 => "F5", KeyCode::F6 => "F6", KeyCode::F7 => "F7", KeyCode::F8 => "F8",
+        KeyCode::F9 => "F9", KeyCode::F10 => "F10", KeyCode::F11 => "F11", KeyCode::F12 => "F12",
+        // Special keys
+        KeyCode::Space => "SPACE",
+        KeyCode::Enter => "ENTER",
+        KeyCode::Backspace => "BS",
+        KeyCode::Tab => "TAB",
+        KeyCode::Escape => "ESC",
+        KeyCode::Insert => "INS",
+        KeyCode::Delete => "DEL",
+        KeyCode::Home => "HOME",
+        KeyCode::End => "END",
+        KeyCode::PageUp => "PGUP",
+        KeyCode::PageDown => "PGDWN",
+        // Arrow keys
+        KeyCode::ArrowLeft => "LEFT",
+        KeyCode::ArrowRight => "RIGHT",
+        KeyCode::ArrowUp => "UP",
+        KeyCode::ArrowDown => "DOWN",
+        // Punctuation
+        KeyCode::Minus => "-",
+        KeyCode::Equal => "=",
+        KeyCode::BracketLeft => "[",
+        KeyCode::BracketRight => "]",
+        KeyCode::Backslash => "\\",
+        KeyCode::Semicolon => ";",
+        KeyCode::Quote => "'",
+        KeyCode::Backquote => "`",
+        KeyCode::Comma => ",",
+        KeyCode::Period => ".",
+        KeyCode::Slash => "/",
+        _ => return None,
+    };
+    Some(key_str.to_string())
+}
+
 /// Returns the Anime4K shader command for a given key
 fn get_anime4k_shader_command(key_code: KeyCode) -> Option<(&'static str, &'static str)> {
     match key_code {
@@ -279,6 +332,46 @@ fn main() -> ExitCode {
                         }
                     }
                 }
+
+                // Forward all keypresses to MPV for input.conf bindings
+                if key_event.state.is_pressed() {
+                    if let PhysicalKey::Code(key_code) = key_event.physical_key {
+                        if let Some(mut mpv_key) = keycode_to_mpv_key(key_code) {
+                            // Handle modifiers (MPV format: CTRL+s, Shift+g, etc.)
+                            // For letters with Shift, MPV expects uppercase letter (z -> Z)
+                            // For other keys, use explicit Shift+ prefix
+                            let is_letter = matches!(key_code,
+                                KeyCode::KeyA | KeyCode::KeyB | KeyCode::KeyC | KeyCode::KeyD |
+                                KeyCode::KeyE | KeyCode::KeyF | KeyCode::KeyG | KeyCode::KeyH |
+                                KeyCode::KeyI | KeyCode::KeyJ | KeyCode::KeyK | KeyCode::KeyL |
+                                KeyCode::KeyM | KeyCode::KeyN | KeyCode::KeyO | KeyCode::KeyP |
+                                KeyCode::KeyQ | KeyCode::KeyR | KeyCode::KeyS | KeyCode::KeyT |
+                                KeyCode::KeyU | KeyCode::KeyV | KeyCode::KeyW | KeyCode::KeyX |
+                                KeyCode::KeyY | KeyCode::KeyZ
+                            );
+
+                            if modifiers.shift_key() && is_letter {
+                                // For letters, Shift means uppercase (z -> Z)
+                                mpv_key = mpv_key.to_uppercase();
+                            } else if modifiers.shift_key() {
+                                // For non-letters, use Shift+ prefix
+                                mpv_key = format!("Shift+{}", mpv_key);
+                            }
+
+                            if modifiers.control_key() {
+                                mpv_key = format!("CTRL+{}", mpv_key);
+                            }
+                            if modifiers.alt_key() {
+                                mpv_key = format!("ALT+{}", mpv_key);
+                            }
+
+                            // Send keypress to MPV (will trigger input.conf bindings)
+                            println!("⌨️  [MPV] Sending keypress: {}", mpv_key);
+                            player.command("keypress".to_string(), vec![mpv_key]);
+                        }
+                    }
+                }
+
                 webview.keyboard_input(key_event, modifiers);
             }
             AppEvent::FileHover((path, state)) => {

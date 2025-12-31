@@ -183,7 +183,13 @@ impl Player {
             init.set_property("video-timing-offset", "0")?;
             init.set_property("terminal", "yes")?;
             init.set_property("msg-level", msg_level)?;
+            // Enable config file loading from custom directory
             init.set_property("config-dir", config_dir.as_str())?;
+            init.set_property("config", "yes")?;
+            init.set_property("load-scripts", "yes")?;
+            // Enable input.conf processing for keyboard shortcuts
+            init.set_property("input-default-bindings", "yes")?;
+            init.set_property("input-vo-keyboard", "yes")?;
             Ok(())
         })
         .expect("Failed to create mpv");
@@ -271,7 +277,7 @@ impl Player {
     pub fn command(&self, name: String, args: Vec<String>) {
         let args = args.iter().map(String::as_ref).collect_vec();
         if let Err(e) = self.mpv.command(&name, &args) {
-            error!("Failed to use command {name}: {e}");
+            error!("Failed to use command {name} with args {:?}: {e}", args);
         }
     }
 

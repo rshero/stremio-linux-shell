@@ -53,8 +53,16 @@ impl Discord {
     }
 
     pub fn update_presence(&mut self, args: Vec<String>) {
-        if !self.enabled || self.client.is_none() {
+        if !self.enabled {
             return;
+        }
+
+        // Try to reconnect if not connected
+        if self.client.is_none() {
+            self.connect();
+            if self.client.is_none() {
+                return; // Still not connected, skip this update
+            }
         }
 
         if args.is_empty() {

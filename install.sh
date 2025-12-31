@@ -15,11 +15,17 @@ mkdir -p "$INSTALL_DIR"
 
 # Copy binary and dependencies
 echo "📦 Copying files..."
+
+# Ensure server.js exists in target/release (copy from data if needed)
+if [ ! -f target/release/server.js ]; then
+    echo "⚠️  server.js not in target/release, copying from data..."
+    cp data/server.js target/release/server.js
+fi
+
 cp target/release/stremio-linux-shell "$INSTALL_DIR/"
 cp target/release/server.js "$INSTALL_DIR/"
 cp -r vendor/cef "$INSTALL_DIR/"
 cp -r data/mpv-configs/shaders "$INSTALL_DIR/"
-cp -r data/mpv-configs/portable_config "$INSTALL_DIR/mpv-configs/"
 
 # Create launcher script
 echo "🔧 Creating launcher..."
@@ -69,7 +75,7 @@ echo ""
 echo "⚙️  Features enabled:"
 echo "   ✓ MPV player with Anime4K shaders (Ctrl+0-6)"
 echo "   ✓ Discord Rich Presence (enabled by default)"
-echo "   ✓ ThumbFast video thumbnails"
+echo "   ✓ Custom MPV shortcuts and configuration"
 echo "   ✓ Enhanced player controls"
 echo ""
 echo "📝 Config locations:"

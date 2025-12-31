@@ -21,12 +21,6 @@ impl MpvConfig {
         // Create directory structure
         fs::create_dir_all(&config_dir).context("Failed to create MPV config directory")?;
 
-        fs::create_dir_all(config_dir.join("scripts"))
-            .context("Failed to create scripts directory")?;
-
-        fs::create_dir_all(config_dir.join("script-opts"))
-            .context("Failed to create script-opts directory")?;
-
         fs::create_dir_all(config_dir.join("shaders/anime4k"))
             .context("Failed to create shaders directory")?;
 
@@ -35,9 +29,6 @@ impl MpvConfig {
 
         // Copy shaders
         Self::install_shaders(&config_dir)?;
-
-        // Install ThumbFast
-        Self::install_thumbfast(&config_dir)?;
 
         Ok(Self { config_dir })
     }
@@ -90,43 +81,6 @@ impl MpvConfig {
         }
 
         println!("⚠️  Warning: Anime4K shaders not found. Shader keybindings won't work.");
-        Ok(())
-    }
-
-    /// Installs ThumbFast script and config
-    fn install_thumbfast(config_dir: &Path) -> Result<()> {
-        let thumbfast_script = config_dir.join("scripts/thumbfast.lua");
-        let thumbfast_conf = config_dir.join("script-opts/thumbfast.conf");
-
-        // Check if already installed
-        if thumbfast_script.exists() {
-            return Ok(());
-        }
-
-        let exe_path = std::env::current_exe()?;
-        let exe_dir = exe_path.parent().context("Failed to get exe directory")?;
-
-        // Try to copy from bundled data directory
-        let source_paths = [
-            exe_dir.join("../../data/mpv-configs/portable_config"), // Dev path
-            exe_dir.join("mpv-configs/portable_config"),            // Production path
-        ];
-
-        for source in &source_paths {
-            let script_src = source.join("scripts/thumbfast.lua");
-            let conf_src = source.join("script-opts/thumbfast.conf");
-
-            if script_src.exists() {
-                fs::copy(&script_src, &thumbfast_script)?;
-                if conf_src.exists() {
-                    fs::copy(&conf_src, &thumbfast_conf)?;
-                }
-                println!("✅ Installed ThumbFast thumbnails");
-                return Ok(());
-            }
-        }
-
-        println!("⚠️  Warning: ThumbFast not found. Video thumbnails won't be available.");
         Ok(())
     }
 
