@@ -2,6 +2,7 @@ mod app;
 mod config;
 mod constants;
 mod discord;
+mod gpu;
 mod instance;
 mod ipc;
 mod player;

@@ -56,6 +56,7 @@ impl TryFrom<IpcMessageRequest> for IpcEvent {
 
                     match data {
                         Some(data) => match name {
+                            "app-ready" => Ok(IpcEvent::Init(value.id)),  // Handle app-ready event
                             "win-set-visibility" => {
                                 let data: IpcMessageRequestWinSetVisilibty =
                                     serde_json::from_value(data)

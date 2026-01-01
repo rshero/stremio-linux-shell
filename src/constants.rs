@@ -1,3 +1,5 @@
+use once_cell::sync::Lazy;
+
 pub const APP_ID: &str = match cfg!(debug_assertions) {
     true => "com.stremio.Stremio.Devel",
     false => "com.stremio.Stremio",
@@ -10,10 +12,8 @@ pub const STARTUP_URL: &str = "https://stremio-web-zeta.vercel.app";
 pub const URI_SCHEME: &str = "stremio://";
 pub const DATA_DIR: &str = "stremio";
 
-pub const CMD_SWITCHES: &[&str] = &[
-    // No special CEF switches needed - clipboard is handled via DBus/arboard
-    // GPU settings can be enabled here if needed:
-    // "enable-begin-frame-scheduling",
-    // "enable-gpu",
-    // "enable-gpu-rasterization",
-];
+/// Dynamically generated CEF command-line switches based on GPU detection
+pub static CMD_SWITCHES: Lazy<Vec<&'static str>> = Lazy::new(|| {
+    let gpu_vendor = crate::gpu::detect_gpu_vendor();
+    crate::gpu::get_gpu_switches(gpu_vendor)
+});
