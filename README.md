@@ -6,14 +6,6 @@ An enhanced fork of Stremio for Linux with powerful MPV features, Discord Rich P
 ## ✨ Features
 
 ### 🎥 MPV Video Player
-- **Anime4K Shaders**: AI-powered upscaling for anime content
-  - `Ctrl+1` - Mode A (HQ) - Highest quality, best for 1080p→4K
-  - `Ctrl+2` - Mode B (HQ+Denoise) - HQ with noise reduction
-  - `Ctrl+3` - Mode C (Fast) - Performance mode
-  - `Ctrl+4` - Mode A+A (HQ) - Double upscale for 720p→4K
-  - `Ctrl+5` - Mode B+B (HQ+Denoise) - Double with denoise
-  - `Ctrl+6` - Mode C+A (Fast) - Fast first pass, HQ second
-  - `Ctrl+0` - Clear all shaders
 - **Hardware Acceleration**: VAAPI, NVDEC, VDPAU support
 - **High Quality Rendering**: gpu-next, interpolation, debanding
 - **Custom Config**: `~/.local/share/stremio/mpv-portable/mpv.conf`
@@ -24,11 +16,6 @@ An enhanced fork of Stremio for Linux with powerful MPV features, Discord Rich P
 - Movie titles with artwork
 - Elapsed time and timestamps
 - **Toggle**: Enabled by default, config at `~/.local/share/stremio/discord.json`
-
-### 📸 ThumbFast Thumbnails
-- Fast video thumbnail generation
-- Hover over seekbar to see previews
-- Integrated MPV script
 
 ### 🌐 Custom Web UI
 - Uses your own hosted Stremio Web instance
