@@ -21,14 +21,12 @@ impl MpvConfig {
         // Create directory structure
         fs::create_dir_all(&config_dir).context("Failed to create MPV config directory")?;
 
-        fs::create_dir_all(config_dir.join("shaders/anime4k"))
+        // Create shaders directory for user-added shaders
+        fs::create_dir_all(config_dir.join("shaders"))
             .context("Failed to create shaders directory")?;
 
         // Install default configs if they don't exist
         Self::install_default_configs(&config_dir)?;
-
-        // Copy shaders
-        Self::install_shaders(&config_dir)?;
 
         Ok(Self { config_dir })
     }
@@ -46,41 +44,9 @@ impl MpvConfig {
         if !input_conf_path.exists() {
             fs::write(&input_conf_path, DEFAULT_INPUT_CONF)
                 .context("Failed to write default input.conf")?;
-            println!("✅ Created default input.conf with Anime4K keybindings");
+            println!("✅ Created default input.conf");
         }
 
-        Ok(())
-    }
-
-    /// Copies Anime4K shaders from the build directory
-    fn install_shaders(config_dir: &Path) -> Result<()> {
-        let shaders_dest = config_dir.join("shaders/anime4k");
-
-        // Check if shaders are already installed
-        if shaders_dest.join("Restore").exists() {
-            return Ok(()); // Already installed
-        }
-
-        // Try to copy shaders from bundled data directory
-        let exe_path = std::env::current_exe()?;
-        let exe_dir = exe_path.parent().context("Failed to get exe directory")?;
-
-        // In development, data/ is in the project root
-        // In production, we'll need to include shaders with the binary
-        let shader_sources = [
-            exe_dir.join("../../data/mpv-configs/shaders/anime4k"), // Dev path
-            exe_dir.join("shaders/anime4k"),                        // Production path
-        ];
-
-        for source in &shader_sources {
-            if source.exists() {
-                copy_dir_recursive(source, &shaders_dest)?;
-                println!("✅ Installed Anime4K shaders");
-                return Ok(());
-            }
-        }
-
-        println!("⚠️  Warning: Anime4K shaders not found. Shader keybindings won't work.");
         Ok(())
     }
 
@@ -88,26 +54,4 @@ impl MpvConfig {
     pub fn config_dir_str(&self) -> String {
         self.config_dir.to_string_lossy().to_string()
     }
-}
-
-/// Recursively copies a directory
-fn copy_dir_recursive(src: &Path, dst: &Path) -> Result<()> {
-    if !dst.exists() {
-        fs::create_dir_all(dst)?;
-    }
-
-    for entry in fs::read_dir(src)? {
-        let entry = entry?;
-        let ty = entry.file_type()?;
-        let src_path = entry.path();
-        let dst_path = dst.join(entry.file_name());
-
-        if ty.is_dir() {
-            copy_dir_recursive(&src_path, &dst_path)?;
-        } else {
-            fs::copy(&src_path, &dst_path)?;
-        }
-    }
-
-    Ok(())
 }
