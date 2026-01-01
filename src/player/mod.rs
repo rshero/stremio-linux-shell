@@ -172,8 +172,8 @@ impl Player {
 
         let log = env::var("RUST_LOG");
         let msg_level = match log {
-            Ok(scope) => &format!("all={}", scope.as_str()),
-            _ => "all=no",
+            Ok(scope) => &format!("all={},cplayer=v,lua=v", scope.as_str()),
+            _ => "cplayer=v,lua=v",
         };
 
         let config_dir = mpv_config.config_dir_str();

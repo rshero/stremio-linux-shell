@@ -344,6 +344,9 @@ fn main() -> ExitCode {
                     }
                 }
 
+                // Track if we forwarded the key to MPV
+                let mut forwarded_to_mpv = false;
+
                 // Forward keypresses to MPV ONLY when video is playing
                 if is_playing && key_event.state.is_pressed() {
                     if let PhysicalKey::Code(key_code) = key_event.physical_key {
@@ -378,11 +381,27 @@ fn main() -> ExitCode {
 
                             // Send keypress to MPV (will trigger input.conf bindings)
                             player.command("keypress".to_string(), vec![mpv_key]);
+                            forwarded_to_mpv = true;
+
+                            // Don't forward navigation/editing keys to webview to prevent conflicts
+                            // These keys can cause crashes or unwanted behavior in CEF
+                            let is_navigation_key = matches!(key_code,
+                                KeyCode::Backspace | KeyCode::Delete | KeyCode::Home | KeyCode::End |
+                                KeyCode::PageUp | KeyCode::PageDown | KeyCode::ArrowLeft |
+                                KeyCode::ArrowRight | KeyCode::ArrowUp | KeyCode::ArrowDown
+                            );
+
+                            if is_navigation_key {
+                                return; // Don't forward to webview
+                            }
                         }
                     }
                 }
 
-                webview.keyboard_input(key_event, modifiers);
+                // Only forward to webview if we didn't handle it for MPV, or if it's a safe key
+                if !forwarded_to_mpv {
+                    webview.keyboard_input(key_event, modifiers);
+                }
             }
             AppEvent::FileHover((path, state)) => {
                 webview.file_hover(path, state);

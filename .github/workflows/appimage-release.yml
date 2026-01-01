@@ -67,22 +67,6 @@ jobs:
           path: target
           key: ${{ runner.os }}-target-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Download Anime4K shaders and ThumbFast
-        run: |
-          # Download Anime4K shaders
-          mkdir -p data/mpv-configs/shaders
-          wget -q https://github.com/bloc97/Anime4K/archive/refs/heads/master.zip -O anime4k.zip
-          unzip -q anime4k.zip
-          mv Anime4K-master/glsl data/mpv-configs/shaders/anime4k
-          rm -rf anime4k.zip Anime4K-master
-
-          # Download ThumbFast
-          mkdir -p data/mpv-configs/portable_config/{scripts,script-opts}
-          wget -q https://raw.githubusercontent.com/po5/thumbfast/master/thumbfast.lua \
-            -O data/mpv-configs/portable_config/scripts/thumbfast.lua
-          wget -q https://raw.githubusercontent.com/po5/thumbfast/master/thumbfast.conf \
-            -O data/mpv-configs/portable_config/script-opts/thumbfast.conf
-
       - name: Build release binary
         run: cargo build --release
 
@@ -109,14 +93,6 @@ jobs:
           # Copy CEF libraries
           cp -r vendor/cef AppDir/opt/stremio-enhanced/
 
-          # Copy shaders
-          mkdir -p AppDir/opt/stremio-enhanced/shaders
-          cp -r data/mpv-configs/shaders/anime4k AppDir/opt/stremio-enhanced/shaders/
-
-          # Copy ThumbFast
-          mkdir -p AppDir/opt/stremio-enhanced/mpv-configs
-          cp -r data/mpv-configs/portable_config AppDir/opt/stremio-enhanced/mpv-configs/
-
           # Create wrapper script
           cat > AppDir/usr/bin/stremio-enhanced <<'EOF'
           #!/bin/bash
@@ -134,7 +110,7 @@ jobs:
           Type=Application
           Name=Stremio Enhanced
           GenericName=Media Center
-          Comment=Enhanced Stremio with MPV, Anime4K, Discord RPC & ThumbFast
+          Comment=Enhanced Stremio with MPV & Discord RPC
           Icon=stremio-enhanced
           Exec=stremio-enhanced %U
           Terminal=false
@@ -204,9 +180,8 @@ jobs:
             # 🎬 Stremio Enhanced ${{ steps.version.outputs.VERSION }}
 
             ## ✨ Features
-            - 🎥 **MPV Player** with Anime4K AI upscaling (Ctrl+0-6)
+            - 🎥 **MPV Player** - High-quality video playback
             - 🎮 **Discord Rich Presence** - Show what you're watching
-            - 📸 **ThumbFast** - Video thumbnail previews on seekbar
             - 🌐 **Custom Web UI** - Enhanced interface
             - ⚡ **Hardware Acceleration** - VAAPI/NVDEC/VDPAU
 
@@ -236,15 +211,21 @@ jobs:
             stremio-enhanced
             ```
 
-            ## 🎮 Keyboard Shortcuts
-            - **Ctrl+1-6** - Anime4K shader modes (HQ, Denoise, Fast, etc.)
-            - **Ctrl+0** - Clear all shaders
+            ## 🎮 MPV Keyboard Shortcuts
+            All standard MPV keyboard shortcuts work during playback:
             - **Space** - Play/Pause
-            - **F/F11** - Fullscreen
+            - **f** - Toggle fullscreen
+            - **m** - Mute/unmute
+            - **9/0** - Decrease/increase volume
+            - **Left/Right** - Seek backward/forward 5 seconds
+            - **Up/Down** - Seek forward/backward 1 minute
+
+            You can customize keybindings at: `~/.local/share/stremio/mpv-portable/input.conf`
 
             ## ⚙️ Configuration
             - **MPV**: `~/.local/share/stremio/mpv-portable/mpv.conf`
             - **Discord**: `~/.local/share/stremio/discord.json` (set `enabled: false` to disable)
+            - **Shaders**: Place custom shaders in `~/.local/share/stremio/mpv-portable/shaders/`
 
             ## 🐛 Troubleshooting
 
@@ -253,18 +234,15 @@ jobs:
             echo '{"enabled":true}' > ~/.local/share/stremio/discord.json
             ```
 
-            **Shaders not working?**
-            - Play a video first
-            - Press Ctrl+1 during playback
-            - Check terminal for 🎨 messages
-
             **Video won't play?**
             ```bash
             echo "hwdec=no" >> ~/.local/share/stremio/mpv-portable/mpv.conf
             ```
 
-            ## 📝 Full Changelog
-            See the auto-generated changelog below.
+            **Want to add custom shaders (like Anime4K)?**
+            1. Download shaders to `~/.local/share/stremio/mpv-portable/shaders/`
+            2. Add keybindings in `~/.local/share/stremio/mpv-portable/input.conf`
+            3. Example: `CTRL+1 change-list glsl-shaders set "~~/shaders/your-shader.glsl"`
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

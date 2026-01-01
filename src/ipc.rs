@@ -43,7 +43,7 @@ pub struct IpcMessageRequest {
 }
 
 impl TryFrom<IpcMessageRequest> for IpcEvent {
-    type Error = &'static str;
+    type Error = String;
 
     fn try_from(value: IpcMessageRequest) -> Result<Self, Self::Error> {
         match value.r#type {
@@ -99,15 +99,15 @@ impl TryFrom<IpcMessageRequest> for IpcEvent {
 
                                 Ok(IpcEvent::Mpv(IpcEventMpv::Set(MpvProperty(name, value))))
                             }
-                            _ => Err("Unknown method"),
+                            _ => Err(format!("Unknown method (type=6, with_data): '{}' | full_args: {:?}", name, args)),
                         },
                         None => match name {
                             "quit" => Ok(IpcEvent::Quit),
-                            _ => Err("Unknown method"),
+                            _ => Err(format!("Unknown method (type=6, no_data): '{}' | full_args: {:?}", name, args)),
                         },
                     }
                 }
-                None => Err("Missing args"),
+                None => Err("Missing args".to_string()),
             },
             7 => match value.args {
                 Some(args) => {
@@ -127,12 +127,12 @@ impl TryFrom<IpcMessageRequest> for IpcEvent {
                             let enabled = args.get(1).and_then(Value::as_bool).unwrap_or(false);
                             Ok(IpcEvent::DiscordToggle(enabled))
                         }
-                        _ => Err("Unknown method"),
+                        _ => Err(format!("Unknown method (type=7): '{}' | full_args: {:?}", name, args)),
                     }
                 }
-                None => Err("Missing args"),
+                None => Err("Missing args".to_string()),
             },
-            _ => Err("Unknown type"),
+            _ => Err(format!("Unknown IPC message type: {}", value.r#type)),
         }
     }
 }
@@ -142,9 +142,9 @@ impl TryFrom<String> for IpcEvent {
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         serde_json::from_str::<IpcMessageRequest>(&value)
-            .map_err(|e| format!("Failed to convert String to IpcEvent: {e}"))?
+            .map_err(|e| format!("Failed to parse IPC JSON: {e}"))?
             .try_into()
-            .map_err(|e| format!("Failed to convert IpcEvent to IpcMessageRequest: {e}"))
+            .map_err(|e| format!("Failed to convert IpcMessageRequest to IpcEvent: {e}"))
     }
 }
 
@@ -254,7 +254,7 @@ impl TryFrom<IpcEvent> for IpcMessageResponse {
 pub fn parse_request<T: Fn(IpcEvent)>(data: String, handler: T) {
     IpcEvent::try_from(data)
         .map(handler)
-        .map_err(|e| eprintln!("{e}"))
+        .map_err(|e| eprintln!("❌ [IPC ERROR] {}", e))
         .ok();
 }
 

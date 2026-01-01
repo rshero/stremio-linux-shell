@@ -33,8 +33,9 @@ impl Discord {
                     info!("🎮 Discord Rich Presence connected");
                     self.client = Some(client);
                 }
-                Err(e) => {
-                    error!("Failed to connect to Discord: {}", e);
+                Err(_e) => {
+                    // Discord not running - this is expected, don't spam logs
+                    // error!("Failed to connect to Discord: {}", e);
                 }
             }
         }
