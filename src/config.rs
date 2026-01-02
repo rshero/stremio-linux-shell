@@ -13,7 +13,7 @@ pub struct Config {
     pub webview: WebViewConfig,
     pub tray: TrayConfig,
     pub player: PlayerConfig,
-    pub discord: DiscordConfig,
+    pub app: AppConfig,
 }
 
 impl Config {
@@ -39,7 +39,7 @@ impl Config {
         let webview = WebViewConfig::new(&data_dir);
         let tray = TrayConfig::new(&runtime_dir);
         let player = PlayerConfig::new(&data_dir);
-        let discord = DiscordConfig::load(&data_dir);
+        let app = AppConfig::load(&data_dir);
 
         Self {
             instance,
@@ -47,7 +47,7 @@ impl Config {
             webview,
             tray,
             player,
-            discord,
+            app,
         }
     }
 }
@@ -140,36 +140,65 @@ impl PlayerConfig {
     }
 }
 
-const DISCORD_CONFIG_FILE: &str = "discord.json";
+const APP_CONFIG_FILE: &str = "config.json";
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Default)]
 pub struct DiscordConfig {
+    #[serde(default = "default_true")]
     pub enabled: bool,
-    config_path: PathBuf,
 }
 
-impl Default for DiscordConfig {
+#[derive(Serialize, Deserialize, Clone)]
+pub struct ThumbfastConfig {
+    #[serde(default = "default_true")]
+    pub enabled: bool,
+    #[serde(default = "default_thumbfast_height")]
+    pub height: i64,
+}
+
+impl Default for ThumbfastConfig {
     fn default() -> Self {
         Self {
-            enabled: true, // Enabled by default
-            config_path: PathBuf::new(),
+            enabled: true,
+            height: 80,
         }
     }
 }
 
-impl DiscordConfig {
-    pub fn load(data_dir: &Path) -> Self {
-        let config_path = data_dir.join(DISCORD_CONFIG_FILE);
+// Helper functions for serde defaults
+fn default_true() -> bool {
+    true
+}
 
+fn default_thumbfast_height() -> i64 {
+    80
+}
+
+#[derive(Serialize, Deserialize, Clone, Default)]
+pub struct AppConfig {
+    #[serde(default)]
+    pub discord: DiscordConfig,
+    #[serde(default)]
+    pub thumbfast: ThumbfastConfig,
+    #[serde(skip)]
+    config_path: PathBuf,
+}
+
+impl AppConfig {
+    pub fn load(data_dir: &Path) -> Self {
+        let config_path = data_dir.join(APP_CONFIG_FILE);
+
+        // Try to load existing config
         if config_path.exists() {
             if let Ok(content) = fs::read_to_string(&config_path) {
-                if let Ok(mut config) = serde_json::from_str::<DiscordConfig>(&content) {
+                if let Ok(mut config) = serde_json::from_str::<AppConfig>(&content) {
                     config.config_path = config_path;
                     return config;
                 }
             }
         }
 
+        // Create default config if not exists
         let mut config = Self::default();
         config.config_path = config_path;
         config.save();
@@ -181,8 +210,8 @@ impl DiscordConfig {
         let _ = fs::write(&self.config_path, content);
     }
 
-    pub fn set_enabled(&mut self, enabled: bool) {
-        self.enabled = enabled;
+    pub fn set_discord_enabled(&mut self, enabled: bool) {
+        self.discord.enabled = enabled;
         self.save();
     }
 }

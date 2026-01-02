@@ -12,8 +12,11 @@
 - 🎮 **Discord Rich Presence** - Show friends what you're watching
   - Displays movie/series info with artwork
   - Shows elapsed time and episode details
-  - Toggle in settings: `~/.local/share/stremio/discord.json`
-- 📸 **ThumbFast Thumbnails** - Hover over seekbar for video previews
+  - Toggle in unified config file
+- 🖼️ **Timeline Thumbnails (Thumbfast)** - Hover over seekbar for instant video previews
+  - Hardware-accelerated thumbnail generation using VA-API
+  - Optimized for streaming with spawn-on-load
+  - Configurable size and enable/disable per preference
 - 🌐 **Custom Web UI** - Enhanced interface with modern design
 - ⚡ **Hardware Acceleration** - VAAPI/NVDEC/VDPAU support
 - 🎨 **High Quality Rendering** - gpu-next, interpolation, debanding
@@ -85,15 +88,26 @@ interpolation=yes
 deband=yes
 ```
 
-#### Discord Rich Presence
-Edit: `~/.local/share/stremio/discord.json`
+#### App Configuration
+Edit: `~/.local/share/stremio/config.json`
 ```json
 {
-  "enabled": true
+  "discord": {
+    "enabled": true
+  },
+  "thumbfast": {
+    "enabled": true,
+    "height": 80
+  }
 }
 ```
 
-Set `"enabled": false` to disable Discord integration.
+**Discord Rich Presence**: Set `discord.enabled` to `false` to disable.
+
+**Thumbfast Thumbnails**:
+- Set `thumbfast.enabled` to `false` to disable timeline thumbnails
+- Adjust `thumbfast.height` to change thumbnail size (default: 80px)
+- Setting height to 0 will also disable thumbnails
 
 ## 🐛 Known Issues
 
@@ -112,8 +126,14 @@ Set `"enabled": false` to disable Discord integration.
 
 ### Discord not showing
 1. Make sure Discord is running
-2. Check config: `cat ~/.local/share/stremio/discord.json`
-3. Set `"enabled": true` and restart
+2. Check config: `cat ~/.local/share/stremio/config.json`
+3. Set `discord.enabled` to `true` and restart
+
+### Thumbnails not appearing
+1. Make sure thumbfast is enabled in config
+2. Check config: `cat ~/.local/share/stremio/config.json`
+3. Ensure `thumbfast.enabled` is `true` and `height` is greater than 0
+4. Note: Thumbnails may be slow on unbuffered streams (network dependent)
 
 ### Shaders not working
 1. Make sure you're playing video content

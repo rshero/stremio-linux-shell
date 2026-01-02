@@ -8,6 +8,24 @@ INSTALL_DIR="$HOME/.local/share/stremio-enhanced"
 BIN_DIR="$HOME/.local/bin"
 DESKTOP_FILE="$HOME/.local/share/applications/com.stremio.Stremio.desktop"
 ICON_DIR="$HOME/.local/share/icons/hicolor"
+DATA_DIR="$HOME/.local/share/stremio"
+
+# Clean up old config files (migrated to unified config.json)
+echo "🧹 Checking for old config files..."
+if [ -f "$DATA_DIR/discord.json" ]; then
+    echo "   Removing old discord.json (now in config.json)..."
+    rm -f "$DATA_DIR/discord.json"
+fi
+if [ -f "$DATA_DIR/thumbfast.json" ]; then
+    echo "   Removing old thumbfast.json (now in config.json)..."
+    rm -f "$DATA_DIR/thumbfast.json"
+fi
+
+# Remove old installation directories if they exist
+if [ -d "$HOME/.stremio-enhanced" ]; then
+    echo "   Removing old installation directory ~/.stremio-enhanced..."
+    rm -rf "$HOME/.stremio-enhanced"
+fi
 
 # Create installation directory
 echo "📁 Creating installation directory..."
@@ -74,12 +92,14 @@ echo ""
 echo "⚙️  Features enabled:"
 echo "   ✓ MPV player with custom configuration"
 echo "   ✓ Discord Rich Presence (enabled by default)"
-echo "   ✓ Enhanced player controls"
+echo "   ✓ Timeline thumbnails (Thumbfast)"
+echo "   ✓ Anime4K AI upscaling shaders (Ctrl+1-6)"
 echo ""
-echo "💡 To add shaders (e.g., Anime4K):"
-echo "   Place them in: ~/.local/share/stremio/mpv-portable/shaders/"
-echo "   Configure in: ~/.local/share/stremio/mpv-portable/input.conf"
+echo "💡 Shader controls:"
+echo "   Press Ctrl+1-6 during playback to switch Anime4K modes"
+echo "   Press Ctrl+0 to clear all shaders"
 echo ""
 echo "📝 Config locations:"
 echo "   MPV: ~/.local/share/stremio/mpv-portable/"
-echo "   Discord: ~/.local/share/stremio/discord.json"
+echo "   App Config: ~/.local/share/stremio/config.json"
+echo "     (Discord, Thumbfast, and other app settings)"

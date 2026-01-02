@@ -170,7 +170,7 @@ fn main() -> ExitCode {
 
     // Discord needs to be in an Rc<RefCell<>> to be accessed from closures
     use std::cell::RefCell;
-    let discord = Rc::new(RefCell::new(Discord::new(config.discord.enabled)));
+    let discord = Rc::new(RefCell::new(Discord::new(config.app.discord.enabled)));
     let discord_clone = discord.clone();
     let discord_clone2 = discord.clone();
 
@@ -475,12 +475,35 @@ fn main() -> ExitCode {
                 }
                 IpcEvent::DiscordToggle(enabled) => {
                     discord_clone2.borrow_mut().set_enabled(enabled);
-                    // Save to config file
+                    // Save to unified config file
                     let data_dir = dirs::data_dir()
                         .expect("Failed to get data dir")
                         .join(crate::constants::DATA_DIR);
-                    let mut discord_config = config::DiscordConfig::load(&data_dir);
-                    discord_config.set_enabled(enabled);
+                    let mut app_config = config::AppConfig::load(&data_dir);
+                    app_config.set_discord_enabled(enabled);
+                }
+                IpcEvent::SeekHover(seconds, x, y) => {
+                    if config.app.thumbfast.enabled && config.app.thumbfast.height > 0 {
+                        let adjusted_y = y - config.app.thumbfast.height;
+                        player.command(
+                            "script-message-to".to_string(),
+                            vec![
+                                "thumbfast".to_string(),
+                                "thumb".to_string(),
+                                seconds,
+                                x,
+                                adjusted_y.to_string()
+                            ]
+                        );
+                    }
+                }
+                IpcEvent::SeekLeave => {
+                    if config.app.thumbfast.enabled && config.app.thumbfast.height > 0 {
+                        player.command(
+                            "script-message-to".to_string(),
+                            vec!["thumbfast".to_string(), "clear".to_string()]
+                        );
+                    }
                 }
                 _ => {}
             }),

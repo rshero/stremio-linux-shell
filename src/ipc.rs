@@ -27,6 +27,8 @@ pub enum IpcEvent {
     Mpv(IpcEventMpv),
     DiscordPresence(Vec<String>),
     DiscordToggle(bool),
+    SeekHover(String, String, i64),  // (seconds, x, y)
+    SeekLeave,
 }
 
 #[derive(Deserialize, Debug)]
@@ -99,10 +101,37 @@ impl TryFrom<IpcMessageRequest> for IpcEvent {
 
                                 Ok(IpcEvent::Mpv(IpcEventMpv::Set(MpvProperty(name, value))))
                             }
+                            "seek-hover" => {
+                                let hover_args: Vec<Value> = serde_json::from_value(data)
+                                    .expect("Invalid seek-hover arguments");
+
+                                let seconds = hover_args.get(0)
+                                    .and_then(Value::as_str)
+                                    .ok_or("Invalid seek-hover seconds")?
+                                    .to_string();
+
+                                let x = hover_args.get(1)
+                                    .and_then(Value::as_str)
+                                    .ok_or("Invalid seek-hover x")?
+                                    .to_string();
+
+                                let y = hover_args.get(2)
+                                    .and_then(Value::as_str)
+                                    .ok_or("Invalid seek-hover y")?
+                                    .parse::<i64>()
+                                    .map_err(|_| "Failed to parse y coordinate")?;
+
+                                Ok(IpcEvent::SeekHover(seconds, x, y))
+                            }
+                            "seek-leave" => {
+                                // seek-leave is sent with empty object {}, just ignore the data
+                                Ok(IpcEvent::SeekLeave)
+                            }
                             _ => Err(format!("Unknown method (type=6, with_data): '{}' | full_args: {:?}", name, args)),
                         },
                         None => match name {
                             "quit" => Ok(IpcEvent::Quit),
+                            "seek-leave" => Ok(IpcEvent::SeekLeave),
                             _ => Err(format!("Unknown method (type=6, no_data): '{}' | full_args: {:?}", name, args)),
                         },
                     }
