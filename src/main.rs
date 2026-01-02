@@ -350,7 +350,11 @@ fn main() -> ExitCode {
                 // Forward keypresses to MPV ONLY when video is playing
                 if is_playing && key_event.state.is_pressed() {
                     if let PhysicalKey::Code(key_code) = key_event.physical_key {
-                        if let Some(mut mpv_key) = keycode_to_mpv_key(key_code) {
+                        // Skip keys that should be handled by the web UI, not MPV
+                        // F and F11 are for fullscreen toggle, handled by useFullscreen.ts
+                        let is_webui_key = matches!(key_code, KeyCode::KeyF | KeyCode::F11);
+
+                        if !is_webui_key && let Some(mut mpv_key) = keycode_to_mpv_key(key_code) {
                             // Handle modifiers (MPV format: CTRL+s, Shift+g, etc.)
                             // For letters with Shift, MPV expects uppercase letter (z -> Z)
                             // For other keys, use explicit Shift+ prefix
