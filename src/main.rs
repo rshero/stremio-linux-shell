@@ -344,17 +344,24 @@ fn main() -> ExitCode {
                     }
                 }
 
+                // Handle fullscreen toggle (F/F11) directly in the shell during playback
+                // The web UI's keyboard shortcuts may be disabled during playback
+                if is_playing && key_event.state.is_pressed() && !modifiers.control_key() && !modifiers.alt_key() {
+                    if let PhysicalKey::Code(key_code) = key_event.physical_key {
+                        if matches!(key_code, KeyCode::KeyF | KeyCode::F11) {
+                            app.toggle_fullscreen();
+                            return; // Don't forward to MPV or webview
+                        }
+                    }
+                }
+
                 // Track if we forwarded the key to MPV
                 let mut forwarded_to_mpv = false;
 
                 // Forward keypresses to MPV ONLY when video is playing
                 if is_playing && key_event.state.is_pressed() {
                     if let PhysicalKey::Code(key_code) = key_event.physical_key {
-                        // Skip keys that should be handled by the web UI, not MPV
-                        // F and F11 are for fullscreen toggle, handled by useFullscreen.ts
-                        let is_webui_key = matches!(key_code, KeyCode::KeyF | KeyCode::F11);
-
-                        if !is_webui_key && let Some(mut mpv_key) = keycode_to_mpv_key(key_code) {
+                        if let Some(mut mpv_key) = keycode_to_mpv_key(key_code) {
                             // Handle modifiers (MPV format: CTRL+s, Shift+g, etc.)
                             // For letters with Shift, MPV expects uppercase letter (z -> Z)
                             // For other keys, use explicit Shift+ prefix

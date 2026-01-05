@@ -173,6 +173,13 @@ impl App {
         }
     }
 
+    pub fn toggle_fullscreen(&self) {
+        if let Some(window) = self.window.as_ref() {
+            let is_fullscreen = window.fullscreen().is_some();
+            self.set_fullscreen(!is_fullscreen);
+        }
+    }
+
     pub fn get_refresh_rate(&self) -> u32 {
         if let Some(window) = self.window.as_ref() {
             for monitor in window.available_monitors() {
