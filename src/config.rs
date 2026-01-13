@@ -14,6 +14,7 @@ pub struct Config {
     pub tray: TrayConfig,
     pub player: PlayerConfig,
     pub app: AppConfig,
+    pub theme: ThemeConfig,
 }
 
 impl Config {
@@ -40,6 +41,7 @@ impl Config {
         let tray = TrayConfig::new(&runtime_dir);
         let player = PlayerConfig::new(&data_dir);
         let app = AppConfig::load(&data_dir);
+        let theme = ThemeConfig::new(&data_dir);
 
         Self {
             instance,
@@ -48,6 +50,7 @@ impl Config {
             tray,
             player,
             app,
+            theme,
         }
     }
 }
@@ -213,5 +216,91 @@ impl AppConfig {
     pub fn set_discord_enabled(&mut self, enabled: bool) {
         self.discord.enabled = enabled;
         self.save();
+    }
+}
+
+const THEMES_DIR: &str = "themes";
+const THEME_CONFIG_FILE: &str = "theme.json";
+
+pub struct ThemeConfig {
+    pub themes_dir: PathBuf,
+    config_path: PathBuf,
+}
+
+#[derive(Serialize, Deserialize, Clone, Default)]
+pub struct ThemeSettings {
+    #[serde(default)]
+    pub url: Option<String>,
+    #[serde(default)]
+    pub css: Option<String>,
+}
+
+impl ThemeConfig {
+    pub fn new(data_dir: &Path) -> Self {
+        let themes_dir = data_dir.join(THEMES_DIR);
+        let config_path = data_dir.join(THEME_CONFIG_FILE);
+
+        // Create themes directory if it doesn't exist
+        fs::create_dir_all(&themes_dir).ok();
+
+        Self {
+            themes_dir,
+            config_path,
+        }
+    }
+
+    pub fn load_settings(&self) -> ThemeSettings {
+        if self.config_path.exists() {
+            if let Ok(content) = fs::read_to_string(&self.config_path) {
+                if let Ok(settings) = serde_json::from_str::<ThemeSettings>(&content) {
+                    return settings;
+                }
+            }
+        }
+        ThemeSettings::default()
+    }
+
+    pub fn save_settings(&self, settings: &ThemeSettings) {
+        if let Ok(content) = serde_json::to_string_pretty(settings) {
+            let _ = fs::write(&self.config_path, content);
+        }
+    }
+
+    pub fn set_url(&self, url: Option<String>) {
+        let mut settings = self.load_settings();
+        settings.url = url;
+        self.save_settings(&settings);
+    }
+
+    pub fn set_css(&self, css: Option<String>) {
+        let mut settings = self.load_settings();
+        settings.css = css;
+        self.save_settings(&settings);
+    }
+
+    pub fn read_theme_file(&self, name: &str) -> Option<String> {
+        let path = self.themes_dir.join(name);
+        fs::read_to_string(path).ok()
+    }
+
+    pub fn write_theme_file(&self, name: &str, content: &str) -> bool {
+        let path = self.themes_dir.join(name);
+        fs::write(path, content).is_ok()
+    }
+
+    pub fn list_themes(&self) -> Vec<String> {
+        fs::read_dir(&self.themes_dir)
+            .map(|entries| {
+                entries
+                    .filter_map(|entry| entry.ok())
+                    .filter(|entry| {
+                        entry.path().extension().map_or(false, |ext| ext == "css")
+                    })
+                    .filter_map(|entry| {
+                        entry.file_name().into_string().ok()
+                    })
+                    .collect()
+            })
+            .unwrap_or_default()
     }
 }

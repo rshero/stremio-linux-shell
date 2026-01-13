@@ -516,6 +516,36 @@ fn main() -> ExitCode {
                         );
                     }
                 }
+                // Theme IPC events
+                IpcEvent::ThemeGetSettings => {
+                    let settings = config.theme.load_settings();
+                    let message = ipc::create_response(IpcEvent::ThemeSettings(
+                        settings.url,
+                        settings.css,
+                    ));
+                    webview.post_message(message);
+                }
+                IpcEvent::ThemeSetUrl(url) => {
+                    config.theme.set_url(url);
+                }
+                IpcEvent::ThemeSetCss(css) => {
+                    config.theme.set_css(css);
+                }
+                IpcEvent::ThemeReadFile(filename) => {
+                    let content = config.theme.read_theme_file(&filename);
+                    let message = ipc::create_response(IpcEvent::ThemeFileContent(content));
+                    webview.post_message(message);
+                }
+                IpcEvent::ThemeWriteFile(filename, content) => {
+                    let success = config.theme.write_theme_file(&filename, &content);
+                    let message = ipc::create_response(IpcEvent::ThemeWriteResult(success));
+                    webview.post_message(message);
+                }
+                IpcEvent::ThemeListFiles => {
+                    let files = config.theme.list_themes();
+                    let message = ipc::create_response(IpcEvent::ThemeFileList(files));
+                    webview.post_message(message);
+                }
                 _ => {}
             }),
         });
