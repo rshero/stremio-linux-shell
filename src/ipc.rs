@@ -29,6 +29,18 @@ pub enum IpcEvent {
     DiscordToggle(bool),
     SeekHover(String, String, i64),  // (seconds, x, y)
     SeekLeave,
+    // Theme IPC events
+    ThemeGetSettings,
+    ThemeSetUrl(Option<String>),
+    ThemeSetCss(Option<String>),
+    ThemeReadFile(String),
+    ThemeWriteFile(String, String),
+    ThemeListFiles,
+    // Response events (shell -> web)
+    ThemeSettings(Option<String>, Option<String>),  // (url, css)
+    ThemeFileContent(Option<String>),
+    ThemeFileList(Vec<String>),
+    ThemeWriteResult(bool),
 }
 
 #[derive(Deserialize, Debug)]
@@ -127,11 +139,34 @@ impl TryFrom<IpcMessageRequest> for IpcEvent {
                                 // seek-leave is sent with empty object {}, just ignore the data
                                 Ok(IpcEvent::SeekLeave)
                             }
+                            // Theme IPC events
+                            "theme-set-url" => {
+                                let url: Option<String> = serde_json::from_value(data).ok();
+                                Ok(IpcEvent::ThemeSetUrl(url))
+                            }
+                            "theme-set-css" => {
+                                let css: Option<String> = serde_json::from_value(data).ok();
+                                Ok(IpcEvent::ThemeSetCss(css))
+                            }
+                            "theme-read-file" => {
+                                let filename: String = serde_json::from_value(data)
+                                    .map_err(|_| "Invalid theme-read-file filename")?;
+                                Ok(IpcEvent::ThemeReadFile(filename))
+                            }
+                            "theme-write-file" => {
+                                let args: Vec<String> = serde_json::from_value(data)
+                                    .map_err(|_| "Invalid theme-write-file arguments")?;
+                                let filename = args.get(0).cloned().ok_or("Missing filename")?;
+                                let content = args.get(1).cloned().ok_or("Missing content")?;
+                                Ok(IpcEvent::ThemeWriteFile(filename, content))
+                            }
                             _ => Err(format!("Unknown method (type=6, with_data): '{}' | full_args: {:?}", name, args)),
                         },
                         None => match name {
                             "quit" => Ok(IpcEvent::Quit),
                             "seek-leave" => Ok(IpcEvent::SeekLeave),
+                            "theme-get-settings" => Ok(IpcEvent::ThemeGetSettings),
+                            "theme-list-files" => Ok(IpcEvent::ThemeListFiles),
                             _ => Err(format!("Unknown method (type=6, no_data): '{}' | full_args: {:?}", name, args)),
                         },
                     }
@@ -273,6 +308,50 @@ impl TryFrom<IpcEvent> for IpcMessageResponse {
                     {
                         "error": error,
                     }
+                ])),
+            }),
+            // Theme response events
+            IpcEvent::ThemeSettings(url, css) => Ok(IpcMessageResponse {
+                id: 1,
+                r#type: 1,
+                object: TRANSPORT_NAME.to_owned(),
+                data: None,
+                args: Some(json!([
+                    "theme-settings",
+                    {
+                        "url": url,
+                        "css": css,
+                    }
+                ])),
+            }),
+            IpcEvent::ThemeFileContent(content) => Ok(IpcMessageResponse {
+                id: 1,
+                r#type: 1,
+                object: TRANSPORT_NAME.to_owned(),
+                data: None,
+                args: Some(json!([
+                    "theme-file-content",
+                    content
+                ])),
+            }),
+            IpcEvent::ThemeFileList(files) => Ok(IpcMessageResponse {
+                id: 1,
+                r#type: 1,
+                object: TRANSPORT_NAME.to_owned(),
+                data: None,
+                args: Some(json!([
+                    "theme-file-list",
+                    files
+                ])),
+            }),
+            IpcEvent::ThemeWriteResult(success) => Ok(IpcMessageResponse {
+                id: 1,
+                r#type: 1,
+                object: TRANSPORT_NAME.to_owned(),
+                data: None,
+                args: Some(json!([
+                    "theme-write-result",
+                    success
                 ])),
             }),
             _ => Err("Failed to convert IpcEvent to IpcMessageResponse"),
