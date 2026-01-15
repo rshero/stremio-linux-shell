@@ -1,44 +1,26 @@
-# 🎬 Stremio Enhanced {VERSION}
+# Stremio Enhanced
 
-## ✨ What's New
+## Features
+- **MPV Player** - High-quality video playback
+- **Discord Rich Presence** - Show what you're watching
+- **Custom Web UI** - Enhanced interface
+- **Hardware Acceleration** - VAAPI/NVDEC/VDPAU
 
-<!-- Describe new features, improvements, and bug fixes here -->
+## Installation
 
-## 🚀 Features
-
-- 🎥 **MPV Player** with Anime4K AI upscaling shaders
-  - Press `Ctrl+1-6` to switch shader modes
-  - Press `Ctrl+0` to disable shaders
-- 🎮 **Discord Rich Presence** - Show friends what you're watching
-  - Displays movie/series info with artwork
-  - Shows elapsed time and episode details
-  - Toggle in unified config file
-- 🖼️ **Timeline Thumbnails (Thumbfast)** - Hover over seekbar for instant video previews
-  - Hardware-accelerated thumbnail generation using VA-API
-  - Optimized for streaming with spawn-on-load
-  - Configurable size and enable/disable per preference
-- 🌐 **Custom Web UI** - Enhanced interface with modern design
-- ⚡ **Hardware Acceleration** - VAAPI/NVDEC/VDPAU support
-- 🎨 **High Quality Rendering** - gpu-next, interpolation, debanding
-
-## 📦 Installation
-
-### AppImage (Universal)
+### Quick Start
 ```bash
 # Download the AppImage
-wget https://github.com/YOUR_USERNAME/stremio-linux-shell/releases/download/{VERSION}/Stremio-Enhanced-{VERSION}-x86_64.AppImage
-
-# Make it executable
-chmod +x Stremio-Enhanced-{VERSION}-x86_64.AppImage
+chmod +x Stremio-Enhanced-*.AppImage
 
 # Run it!
-./Stremio-Enhanced-{VERSION}-x86_64.AppImage
+./Stremio-Enhanced-*.AppImage
 ```
 
 ### System Integration (Optional)
 ```bash
 # Extract AppImage
-./Stremio-Enhanced-{VERSION}-x86_64.AppImage --appimage-extract
+./Stremio-Enhanced-*.AppImage --appimage-extract
 
 # Move to system location
 sudo mv squashfs-root /opt/stremio-enhanced
@@ -46,128 +28,39 @@ sudo mv squashfs-root /opt/stremio-enhanced
 # Create symlink
 sudo ln -s /opt/stremio-enhanced/AppRun /usr/local/bin/stremio-enhanced
 
-# Now you can run from anywhere
+# Run from anywhere
 stremio-enhanced
 ```
 
-### Arch Linux (AUR)
+## MPV Keyboard Shortcuts
+All standard MPV keyboard shortcuts work during playback:
+- **Space** - Play/Pause
+- **f** - Toggle fullscreen
+- **m** - Mute/unmute
+- **9/0** - Decrease/increase volume
+- **Left/Right** - Seek backward/forward 5 seconds
+- **Up/Down** - Seek forward/backward 1 minute
+
+You can customize keybindings at: `~/.local/share/stremio/mpv-portable/input.conf`
+
+## Configuration
+- **MPV**: `~/.local/share/stremio/mpv-portable/mpv.conf`
+- **Discord**: `~/.local/share/stremio/discord.json` (set `enabled: false` to disable)
+- **Shaders**: Place custom shaders in `~/.local/share/stremio/mpv-portable/shaders/`
+
+## Troubleshooting
+
+**Discord not showing?**
 ```bash
-# Install from AUR (if published)
-yay -S stremio-enhanced
-# or
-paru -S stremio-enhanced
+echo '{"enabled":true}' > ~/.local/share/stremio/discord.json
 ```
 
-## 🎮 Usage
-
-### Keyboard Shortcuts
-| Shortcut | Action |
-|----------|--------|
-| `Ctrl+1` | Anime4K Mode A (HQ) |
-| `Ctrl+2` | Anime4K Mode B (HQ+Denoise) |
-| `Ctrl+3` | Anime4K Mode C (Fast) |
-| `Ctrl+4` | Anime4K Mode A+A (HQ) |
-| `Ctrl+5` | Anime4K Mode B+B (HQ+Denoise) |
-| `Ctrl+6` | Anime4K Mode C+A (Fast) |
-| `Ctrl+0` | Clear all shaders |
-| `Space` | Play/Pause |
-| `F` or `F11` | Fullscreen |
-| `↑/↓` | Volume |
-| `←/→` | Seek |
-
-### Configuration
-
-#### MPV Settings
-Edit: `~/.local/share/stremio/mpv-portable/mpv.conf`
-```conf
-vo=gpu-next
-hwdec=auto-safe
-profile=gpu-hq
-scale=ewa_lanczossharp
-interpolation=yes
-deband=yes
-```
-
-#### App Configuration
-Edit: `~/.local/share/stremio/config.json`
-```json
-{
-  "discord": {
-    "enabled": true
-  },
-  "thumbfast": {
-    "enabled": true,
-    "height": 80
-  }
-}
-```
-
-**Discord Rich Presence**: Set `discord.enabled` to `false` to disable.
-
-**Thumbfast Thumbnails**:
-- Set `thumbfast.enabled` to `false` to disable timeline thumbnails
-- Adjust `thumbfast.height` to change thumbnail size (default: 80px)
-- Setting height to 0 will also disable thumbnails
-
-## 🐛 Known Issues
-
-<!-- List any known issues here -->
-
-- None reported yet
-
-## 🛠️ Troubleshooting
-
-### AppImage won't run
-```bash
-# Extract and run directly
-./Stremio-Enhanced-*.AppImage --appimage-extract
-./squashfs-root/AppRun
-```
-
-### Discord not showing
-1. Make sure Discord is running
-2. Check config: `cat ~/.local/share/stremio/config.json`
-3. Set `discord.enabled` to `true` and restart
-
-### Thumbnails not appearing
-1. Make sure thumbfast is enabled in config
-2. Check config: `cat ~/.local/share/stremio/config.json`
-3. Ensure `thumbfast.enabled` is `true` and `height` is greater than 0
-4. Note: Thumbnails may be slow on unbuffered streams (network dependent)
-
-### Shaders not working
-1. Make sure you're playing video content
-2. Press `Ctrl+1` during playback
-3. Check terminal for `🎨 [ANIME4K]` messages
-
-### Video playback issues
-Try disabling hardware decoding:
+**Video won't play?**
 ```bash
 echo "hwdec=no" >> ~/.local/share/stremio/mpv-portable/mpv.conf
 ```
 
-## 📊 System Requirements
-
-- **OS**: Linux (any modern distro)
-- **Architecture**: x86_64
-- **RAM**: 2GB minimum, 4GB recommended
-- **GPU**: OpenGL 3.3+ support
-- **Optional**:
-  - Discord (for Rich Presence)
-  - NVIDIA/AMD/Intel GPU drivers (for hardware acceleration)
-
-## 📝 Credits
-
-- **Base**: [Stremio Linux Shell](https://github.com/Stremio/stremio-linux-shell)
-- **Inspiration**: [Stremio Community v5](https://github.com/Zaarrg/stremio-community-v5)
-- **Anime4K**: [bloc97/Anime4K](https://github.com/bloc97/Anime4K)
-- **ThumbFast**: [po5/thumbfast](https://github.com/po5/thumbfast)
-- **MPV**: [mpv-player/mpv](https://mpv.io)
-
-## 📄 License
-
-GPL-3.0 - Same as Stremio
-
----
-
-**Full Changelog**: https://github.com/YOUR_USERNAME/stremio-linux-shell/compare/v{PREVIOUS_VERSION}...{VERSION}
+**Want to add custom shaders (like Anime4K)?**
+1. Download shaders to `~/.local/share/stremio/mpv-portable/shaders/`
+2. Add keybindings in `~/.local/share/stremio/mpv-portable/input.conf`
+3. Example: `CTRL+1 change-list glsl-shaders set "~~/shaders/your-shader.glsl"`
