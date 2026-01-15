@@ -140,7 +140,7 @@ fn main() -> ExitCode {
     tracing_subscriber::fmt::init();
 
     let args = Args::parse();
-    let config = Config::new();
+    let mut config = Config::new();
 
     let mut webview = WebView::new(config.webview);
     if webview.should_exit() {
@@ -518,31 +518,33 @@ fn main() -> ExitCode {
                 }
                 // Theme IPC events
                 IpcEvent::ThemeGetSettings => {
-                    let settings = config.theme.load_settings();
+                    println!("🎨 [THEME] Getting theme settings");
                     let message = ipc::create_response(IpcEvent::ThemeSettings(
-                        settings.url,
-                        settings.css,
+                        config.app.theme.url.clone(),
                     ));
                     webview.post_message(message);
                 }
                 IpcEvent::ThemeSetUrl(url) => {
-                    config.theme.set_url(url);
+                    println!("🎨 [THEME] Setting URL: {:?}", url);
+                    config.app.set_theme_url(url);
+                    println!("🎨 [THEME] URL saved to config.json");
                 }
-                IpcEvent::ThemeSetCss(css) => {
-                    config.theme.set_css(css);
+                IpcEvent::ThemeSetCss(_css) => {
+                    // CSS field removed - themes are now URL-only
+                    println!("🎨 [THEME] ThemeSetCss ignored (deprecated)");
                 }
                 IpcEvent::ThemeReadFile(filename) => {
-                    let content = config.theme.read_theme_file(&filename);
+                    let content = config.app.read_theme_file(&filename);
                     let message = ipc::create_response(IpcEvent::ThemeFileContent(content));
                     webview.post_message(message);
                 }
                 IpcEvent::ThemeWriteFile(filename, content) => {
-                    let success = config.theme.write_theme_file(&filename, &content);
+                    let success = config.app.write_theme_file(&filename, &content);
                     let message = ipc::create_response(IpcEvent::ThemeWriteResult(success));
                     webview.post_message(message);
                 }
                 IpcEvent::ThemeListFiles => {
-                    let files = config.theme.list_themes();
+                    let files = config.app.list_themes();
                     let message = ipc::create_response(IpcEvent::ThemeFileList(files));
                     webview.post_message(message);
                 }

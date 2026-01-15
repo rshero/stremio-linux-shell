@@ -37,7 +37,7 @@ pub enum IpcEvent {
     ThemeWriteFile(String, String),
     ThemeListFiles,
     // Response events (shell -> web)
-    ThemeSettings(Option<String>, Option<String>),  // (url, css)
+    ThemeSettings(Option<String>),  // url only (css removed)
     ThemeFileContent(Option<String>),
     ThemeFileList(Vec<String>),
     ThemeWriteResult(bool),
@@ -141,7 +141,12 @@ impl TryFrom<IpcMessageRequest> for IpcEvent {
                             }
                             // Theme IPC events
                             "theme-set-url" => {
-                                let url: Option<String> = serde_json::from_value(data).ok();
+                                // Handle both String and null values
+                                let url: Option<String> = match &data {
+                                    Value::String(s) => Some(s.clone()),
+                                    Value::Null => None,
+                                    _ => serde_json::from_value(data).ok().flatten(),
+                                };
                                 Ok(IpcEvent::ThemeSetUrl(url))
                             }
                             "theme-set-css" => {
@@ -311,7 +316,7 @@ impl TryFrom<IpcEvent> for IpcMessageResponse {
                 ])),
             }),
             // Theme response events
-            IpcEvent::ThemeSettings(url, css) => Ok(IpcMessageResponse {
+            IpcEvent::ThemeSettings(url) => Ok(IpcMessageResponse {
                 id: 1,
                 r#type: 1,
                 object: TRANSPORT_NAME.to_owned(),
@@ -320,7 +325,6 @@ impl TryFrom<IpcEvent> for IpcMessageResponse {
                     "theme-settings",
                     {
                         "url": url,
-                        "css": css,
                     }
                 ])),
             }),
@@ -359,7 +363,7 @@ impl TryFrom<IpcEvent> for IpcMessageResponse {
     }
 }
 
-pub fn parse_request<T: Fn(IpcEvent)>(data: String, handler: T) {
+pub fn parse_request<T: FnMut(IpcEvent)>(data: String, handler: T) {
     IpcEvent::try_from(data)
         .map(handler)
         .map_err(|e| eprintln!("❌ [IPC ERROR] {}", e))

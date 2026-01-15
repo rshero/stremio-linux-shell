@@ -14,7 +14,6 @@ pub struct Config {
     pub tray: TrayConfig,
     pub player: PlayerConfig,
     pub app: AppConfig,
-    pub theme: ThemeConfig,
 }
 
 impl Config {
@@ -41,7 +40,6 @@ impl Config {
         let tray = TrayConfig::new(&runtime_dir);
         let player = PlayerConfig::new(&data_dir);
         let app = AppConfig::load(&data_dir);
-        let theme = ThemeConfig::new(&data_dir);
 
         Self {
             instance,
@@ -50,7 +48,6 @@ impl Config {
             tray,
             player,
             app,
-            theme,
         }
     }
 }
@@ -144,6 +141,7 @@ impl PlayerConfig {
 }
 
 const APP_CONFIG_FILE: &str = "config.json";
+const THEMES_DIR: &str = "themes";
 
 #[derive(Serialize, Deserialize, Clone, Default)]
 pub struct DiscordConfig {
@@ -168,6 +166,12 @@ impl Default for ThumbfastConfig {
     }
 }
 
+#[derive(Serialize, Deserialize, Clone, Default)]
+pub struct ThemeSettings {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub url: Option<String>,
+}
+
 // Helper functions for serde defaults
 fn default_true() -> bool {
     true
@@ -183,19 +187,28 @@ pub struct AppConfig {
     pub discord: DiscordConfig,
     #[serde(default)]
     pub thumbfast: ThumbfastConfig,
+    #[serde(default)]
+    pub theme: ThemeSettings,
     #[serde(skip)]
     config_path: PathBuf,
+    #[serde(skip)]
+    pub themes_dir: PathBuf,
 }
 
 impl AppConfig {
     pub fn load(data_dir: &Path) -> Self {
         let config_path = data_dir.join(APP_CONFIG_FILE);
+        let themes_dir = data_dir.join(THEMES_DIR);
+
+        // Create themes directory if it doesn't exist
+        fs::create_dir_all(&themes_dir).ok();
 
         // Try to load existing config
         if config_path.exists() {
             if let Ok(content) = fs::read_to_string(&config_path) {
                 if let Ok(mut config) = serde_json::from_str::<AppConfig>(&content) {
                     config.config_path = config_path;
+                    config.themes_dir = themes_dir;
                     return config;
                 }
             }
@@ -204,6 +217,7 @@ impl AppConfig {
         // Create default config if not exists
         let mut config = Self::default();
         config.config_path = config_path;
+        config.themes_dir = themes_dir;
         config.save();
         config
     }
@@ -217,65 +231,10 @@ impl AppConfig {
         self.discord.enabled = enabled;
         self.save();
     }
-}
 
-const THEMES_DIR: &str = "themes";
-const THEME_CONFIG_FILE: &str = "theme.json";
-
-pub struct ThemeConfig {
-    pub themes_dir: PathBuf,
-    config_path: PathBuf,
-}
-
-#[derive(Serialize, Deserialize, Clone, Default)]
-pub struct ThemeSettings {
-    #[serde(default)]
-    pub url: Option<String>,
-    #[serde(default)]
-    pub css: Option<String>,
-}
-
-impl ThemeConfig {
-    pub fn new(data_dir: &Path) -> Self {
-        let themes_dir = data_dir.join(THEMES_DIR);
-        let config_path = data_dir.join(THEME_CONFIG_FILE);
-
-        // Create themes directory if it doesn't exist
-        fs::create_dir_all(&themes_dir).ok();
-
-        Self {
-            themes_dir,
-            config_path,
-        }
-    }
-
-    pub fn load_settings(&self) -> ThemeSettings {
-        if self.config_path.exists() {
-            if let Ok(content) = fs::read_to_string(&self.config_path) {
-                if let Ok(settings) = serde_json::from_str::<ThemeSettings>(&content) {
-                    return settings;
-                }
-            }
-        }
-        ThemeSettings::default()
-    }
-
-    pub fn save_settings(&self, settings: &ThemeSettings) {
-        if let Ok(content) = serde_json::to_string_pretty(settings) {
-            let _ = fs::write(&self.config_path, content);
-        }
-    }
-
-    pub fn set_url(&self, url: Option<String>) {
-        let mut settings = self.load_settings();
-        settings.url = url;
-        self.save_settings(&settings);
-    }
-
-    pub fn set_css(&self, css: Option<String>) {
-        let mut settings = self.load_settings();
-        settings.css = css;
-        self.save_settings(&settings);
+    pub fn set_theme_url(&mut self, url: Option<String>) {
+        self.theme.url = url;
+        self.save();
     }
 
     pub fn read_theme_file(&self, name: &str) -> Option<String> {
@@ -304,3 +263,4 @@ impl ThemeConfig {
             .unwrap_or_default()
     }
 }
+
