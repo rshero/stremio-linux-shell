@@ -24,6 +24,11 @@ NOTE: Slower on stream
 - Elapsed time and timestamps
 - **Toggle**: Enabled by default, configurable
 
+### 🎨 Theme
+- **Custom CSS**: Apply custom styles to the UI
+- **URL**: Specify a URL to a CSS file or Apply from UI Appearance menu
+- **Example**: `https://raw.githubusercontent.com/rshero/stremio-themes/refs/heads/master/themes/rose-pine.css`
+
 ### 🌐 Custom Web UI
 - Uses your own hosted Stremio Web instance
 - Currently: `https://stremio-web-zeta.vercel.app`
@@ -81,6 +86,9 @@ Located at: `~/.local/share/stremio/config.json`
   "thumbfast": {
     "enabled": true,
     "height": 80
+  },
+  "theme": {
+    "url": "https://raw.githubusercontent.com/rshero/stremio-themes/refs/heads/master/themes/rose-pine.css"
   }
 }
 ```
