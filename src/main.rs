@@ -346,7 +346,8 @@ fn main() -> ExitCode {
 
                 // Handle fullscreen toggle (F/F11) directly in the shell during playback
                 // The web UI's keyboard shortcuts may be disabled during playback
-                if is_playing && key_event.state.is_pressed() && !modifiers.control_key() && !modifiers.alt_key() {
+                // Only trigger on plain F/F11 - Shift+F should go to MPV for other bindings
+                if is_playing && key_event.state.is_pressed() && !modifiers.control_key() && !modifiers.alt_key() && !modifiers.shift_key() {
                     if let PhysicalKey::Code(key_code) = key_event.physical_key {
                         if matches!(key_code, KeyCode::KeyF | KeyCode::F11) {
                             app.toggle_fullscreen();
