@@ -1,7 +1,7 @@
 mod config;
 mod constants;
 
-use std::{env, ffi::CString, os::raw::c_void, rc::Rc};
+use std::{env, ffi::CString, os::raw::c_void, rc::Rc, thread, time::Duration};
 
 use crate::config::PlayerConfig;
 use config::MpvConfig;
@@ -152,11 +152,7 @@ pub struct Player {
 
 impl Player {
     pub fn new(player_config: PlayerConfig) -> Self {
-        // Set C locale for MPV (required)
-        unsafe {
-            libc::setlocale(libc::LC_NUMERIC, b"C\0".as_ptr() as *const _);
-        }
-        // Required for libmpv to work alongside gtk
+        // Ensure C locale for MPV — GTK/CEF may have changed it since main() set it
         unsafe {
             setlocale(LC_NUMERIC, c"C".as_ptr());
         }
@@ -178,21 +174,50 @@ impl Player {
 
         let config_dir = mpv_config.config_dir_str();
 
-        let mpv = Mpv::with_initializer(move |init| {
-            init.set_property("vo", "libmpv")?;
-            init.set_property("video-timing-offset", "0")?;
-            init.set_property("terminal", "yes")?;
-            init.set_property("msg-level", msg_level)?;
-            // Enable config file loading from custom directory
-            init.set_property("config-dir", config_dir.as_str())?;
-            init.set_property("config", "yes")?;
-            init.set_property("load-scripts", "yes")?;
-            // Enable input.conf processing for keyboard shortcuts
-            init.set_property("input-default-bindings", "yes")?;
-            init.set_property("input-vo-keyboard", "yes")?;
-            Ok(())
-        })
-        .expect("Failed to create mpv");
+        // Retry mpv creation — on first boot after reboot, locale can be
+        // reset by GTK between our setlocale call and mpv_create().
+        const MAX_RETRIES: u32 = 3;
+        let mut mpv = None;
+        for attempt in 0..MAX_RETRIES {
+            // Re-force locale before each attempt
+            unsafe {
+                setlocale(LC_NUMERIC, c"C".as_ptr());
+            }
+
+            let msg = msg_level;
+            let dir = config_dir.clone();
+            match Mpv::with_initializer(move |init| {
+                init.set_property("vo", "libmpv")?;
+                init.set_property("video-timing-offset", "0")?;
+                init.set_property("terminal", "yes")?;
+                init.set_property("msg-level", msg)?;
+                // Enable config file loading from custom directory
+                init.set_property("config-dir", dir.as_str())?;
+                init.set_property("config", "yes")?;
+                init.set_property("load-scripts", "yes")?;
+                // Enable input.conf processing for keyboard shortcuts
+                init.set_property("input-default-bindings", "yes")?;
+                init.set_property("input-vo-keyboard", "yes")?;
+                Ok(())
+            }) {
+                Ok(m) => {
+                    mpv = Some(m);
+                    break;
+                }
+                Err(e) => {
+                    error!(
+                        "Failed to create mpv (attempt {}/{}): {:?}",
+                        attempt + 1,
+                        MAX_RETRIES,
+                        e
+                    );
+                    if attempt + 1 < MAX_RETRIES {
+                        thread::sleep(Duration::from_millis(100));
+                    }
+                }
+            }
+        }
+        let mpv = mpv.expect("Failed to create mpv after multiple attempts — is libmpv installed?");
 
         let event_context = EventContext::new(mpv.ctx);
         event_context

@@ -137,6 +137,12 @@ fn get_anime4k_shader_command(key_code: KeyCode) -> Option<(&'static str, &'stat
 }
 
 fn main() -> ExitCode {
+    // Set C locale early, before GTK/CEF init can change it.
+    // MPV requires LC_NUMERIC=C and will fail with "Null" if locale is wrong.
+    unsafe {
+        libc::setlocale(libc::LC_NUMERIC, b"C\0".as_ptr() as *const _);
+    }
+
     tracing_subscriber::fmt::init();
 
     let args = Args::parse();
