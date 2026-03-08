@@ -5,7 +5,7 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
-use crate::constants::DATA_DIR;
+use crate::constants::{DATA_DIR, WINDOW_SIZE};
 
 pub struct Config {
     pub instance: InstanceConfig,
@@ -181,6 +181,48 @@ fn default_thumbfast_height() -> i64 {
     80
 }
 
+#[derive(Serialize, Deserialize, Clone)]
+pub struct WindowConfig {
+    #[serde(default = "default_window_x")]
+    pub x: i32,
+    #[serde(default = "default_window_y")]
+    pub y: i32,
+    #[serde(default = "default_window_width")]
+    pub width: u32,
+    #[serde(default = "default_window_height")]
+    pub height: u32,
+    #[serde(default)]
+    pub maximized: bool,
+}
+
+fn default_window_x() -> i32 {
+    -1 // -1 means center on monitor
+}
+
+fn default_window_y() -> i32 {
+    -1 // -1 means center on monitor
+}
+
+fn default_window_width() -> u32 {
+    WINDOW_SIZE.0 as u32
+}
+
+fn default_window_height() -> u32 {
+    WINDOW_SIZE.1 as u32
+}
+
+impl Default for WindowConfig {
+    fn default() -> Self {
+        Self {
+            x: -1,
+            y: -1,
+            width: WINDOW_SIZE.0 as u32,
+            height: WINDOW_SIZE.1 as u32,
+            maximized: false,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Default)]
 pub struct AppConfig {
     #[serde(default)]
@@ -189,6 +231,8 @@ pub struct AppConfig {
     pub thumbfast: ThumbfastConfig,
     #[serde(default)]
     pub theme: ThemeSettings,
+    #[serde(default)]
+    pub window: WindowConfig,
     #[serde(skip)]
     config_path: PathBuf,
     #[serde(skip)]
@@ -237,6 +281,11 @@ impl AppConfig {
         self.save();
     }
 
+    pub fn set_window(&mut self, window: WindowConfig) {
+        self.window = window;
+        self.save();
+    }
+
     pub fn read_theme_file(&self, name: &str) -> Option<String> {
         let path = self.themes_dir.join(name);
         fs::read_to_string(path).ok()
@@ -252,15 +301,10 @@ impl AppConfig {
             .map(|entries| {
                 entries
                     .filter_map(|entry| entry.ok())
-                    .filter(|entry| {
-                        entry.path().extension().map_or(false, |ext| ext == "css")
-                    })
-                    .filter_map(|entry| {
-                        entry.file_name().into_string().ok()
-                    })
+                    .filter(|entry| entry.path().extension().map_or(false, |ext| ext == "css"))
+                    .filter_map(|entry| entry.file_name().into_string().ok())
                     .collect()
             })
             .unwrap_or_default()
     }
 }
-

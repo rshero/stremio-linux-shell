@@ -23,7 +23,7 @@ use tracing::error;
 use url::Url;
 use winit::{
     application::ApplicationHandler,
-    dpi::PhysicalSize,
+    dpi::{PhysicalPosition, PhysicalSize},
     event::{ElementState, KeyEvent, Touch, WindowEvent},
     event_loop::ActiveEventLoop,
     keyboard::ModifiersState,
@@ -35,6 +35,8 @@ use winit::{
 };
 
 use crate::{
+    config,
+    config::AppConfig,
     constants::{APP_ID, APP_NAME, WINDOW_SIZE},
     shared::{
         self,
@@ -77,10 +79,11 @@ pub struct App {
     modifiers_state: ModifiersState,
     mouse_state: MouseState,
     inhibit_request: Option<Request<()>>,
+    config: AppConfig,
 }
 
 impl App {
-    pub fn new() -> Self {
+    pub fn new(config: &AppConfig) -> Self {
         let (sender, receiver) = unbounded::<AppEvent>();
 
         Self {
@@ -91,6 +94,7 @@ impl App {
             modifiers_state: ModifiersState::empty(),
             mouse_state: MouseState::default(),
             inhibit_request: None,
+            config: config.clone(),
         }
     }
 
@@ -98,18 +102,60 @@ impl App {
         self.receiver.try_iter().for_each(handler);
     }
 
+    pub fn save_window_state(&mut self) {
+        if let Some(window) = self.window.as_ref() {
+            let position = window.outer_position().unwrap_or_default();
+            let size = window.inner_size(); // Use inner_size instead of outer_size
+            let maximized = window.is_maximized();
+
+            let window_config = config::WindowConfig {
+                x: position.x,
+                y: position.y,
+                width: size.width,
+                height: size.height,
+                maximized,
+            };
+
+            self.config.set_window(window_config);
+        }
+    }
+
     pub fn create_window(&mut self, event_loop: &ActiveEventLoop) {
         // Load window icon
         let window_icon = Self::load_window_icon();
+
+        // Get window config with validation
+        let window_config = &self.config.window;
+        
+        // Validate window config - fall back to defaults if invalid
+        let (x, y, width, height, maximized) = Self::validate_window_config(
+            window_config.x,
+            window_config.y,
+            window_config.width,
+            window_config.height,
+            window_config.maximized,
+            event_loop,
+        );
+
+        // Update maximized state
+        self.maximized = maximized;
 
         let mut window_attributes = WindowAttributes::default()
             .with_title(APP_NAME)
             .with_name(APP_ID, APP_ID)
             .with_decorations(true)
             .with_resizable(true)
-            .with_maximized(self.maximized)
+            .with_maximized(maximized)
             .with_min_inner_size(PhysicalSize::new(900, 600))
-            .with_inner_size(PhysicalSize::<u32>::from(WINDOW_SIZE));
+            .with_inner_size(PhysicalSize::new(width, height));
+
+        // Set position (centered or explicit)
+        if x >= 0 && y >= 0 {
+            window_attributes = window_attributes.with_position(PhysicalPosition::new(x, y));
+        } else {
+            // Center on primary monitor - winit centers by default when no position is set
+            // No need to explicitly set position, let the window manager handle it
+        }
 
         // Set window icon if loaded successfully
         if let Some(icon) = window_icon {
@@ -126,15 +172,50 @@ impl App {
         });
 
         self.window = window;
+        
+        // Update maximized state after window creation (might have changed due to WM)
+        if let Some(window) = self.window.as_ref() {
+            self.maximized = window.is_maximized();
+        }
+        
         self.sender.send(AppEvent::Visibility(true)).ok();
 
         shared::create_gl(surface, context);
         shared::with_gl(|_, _| {
             let refresh_rate = self.get_refresh_rate();
-            shared::create_renderer(WINDOW_SIZE, refresh_rate);
+            shared::create_renderer((width as i32, height as i32), refresh_rate);
         });
 
         self.sender.send(AppEvent::Ready).ok();
+    }
+
+    fn validate_window_config(
+        x: i32,
+        y: i32,
+        width: u32,
+        height: u32,
+        maximized: bool,
+        event_loop: &ActiveEventLoop,
+    ) -> (i32, i32, u32, u32, bool) {
+        // Validate values
+        let valid_position = x >= 0 && y >= 0;
+        let valid_size = width >= 900 && height >= 600;
+        
+        // Check reasonable bounds - window should not be larger than primary monitor
+        let mut reasonable_bounds = true;
+        if let Some(monitor) = event_loop.primary_monitor() {
+            let monitor_size = monitor.size();
+            if width > monitor_size.width || height > monitor_size.height {
+                reasonable_bounds = false;
+            }
+        }
+
+        if valid_position && valid_size && reasonable_bounds {
+            (x, y, width, height, maximized)
+        } else {
+            // Return defaults from constants - will be centered
+            (-1, -1, width.max(900).min(WINDOW_SIZE.0 as u32), height.max(600).min(WINDOW_SIZE.1 as u32), maximized)
+        }
     }
 
     pub fn destroy_window(&mut self) {
@@ -388,6 +469,7 @@ impl ApplicationHandler<UserEvent> for App {
                 }
             }
             WindowEvent::CloseRequested => {
+                self.save_window_state();
                 self.destroy_window();
             }
             _ => (),

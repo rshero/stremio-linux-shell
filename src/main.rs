@@ -170,7 +170,7 @@ fn main() -> ExitCode {
     }
 
     let tray = Tray::new(config.tray);
-    let mut app = App::new();
+    let mut app = App::new(&config.app);
     let mut player = Player::new(config.player);
     let mut is_playing = false; // Track if video is actively playing
 
