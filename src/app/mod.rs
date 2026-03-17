@@ -491,6 +491,7 @@ impl ApplicationHandler<UserEvent> for App {
             UserEvent::Quit => {
                 event_loop.exit();
             }
+            UserEvent::Redraw => {}
         }
     }
 }
