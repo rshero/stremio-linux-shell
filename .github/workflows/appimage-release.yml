@@ -3,11 +3,11 @@ name: AppImage Release
 on:
   push:
     tags:
-      - 'v*'  # Trigger on version tags like v1.0.0
-  workflow_dispatch:  # Allow manual trigger
+      - "v*" # Trigger on version tags like v1.0.0
+  workflow_dispatch: # Allow manual trigger
 
 permissions:
-  contents: write  # Required for creating releases
+  contents: write # Required for creating releases
 
 jobs:
   build-appimage:
@@ -156,7 +156,7 @@ jobs:
           if [ -z "$GENERATED_APPIMAGE" ]; then
             GENERATED_APPIMAGE=$(ls *.AppImage 2>/dev/null | head -n1)
           fi
-          
+
           if [ -n "$GENERATED_APPIMAGE" ]; then
             mv "$GENERATED_APPIMAGE" "Stremio-Enhanced-${VERSION}-x86_64.AppImage"
           else
@@ -164,17 +164,12 @@ jobs:
             exit 1
           fi
 
-      - name: Extract version
-        id: version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-
-      - name: Create or Update Release
-        uses: softprops/action-gh-release@v1
+      - name: Create or Update Release (GitHub auto notes)
+        uses: softprops/action-gh-release@v2
         with:
           draft: false
           prerelease: false
           generate_release_notes: true
-          body_path: .github/RELEASE_TEMPLATE.md
           files: |
             Stremio-Enhanced-*.AppImage
         env:
