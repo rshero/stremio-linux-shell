@@ -470,7 +470,10 @@ impl ApplicationHandler<UserEvent> for App {
             }
             WindowEvent::CloseRequested => {
                 self.save_window_state();
-                self.destroy_window();
+                // Exit the app completely instead of hiding to tray
+                if let Some(proxy) = crate::shared::EVENT_LOOP_PROXY.get() {
+                    proxy.send_event(UserEvent::Quit).ok();
+                }
             }
             _ => (),
         }
