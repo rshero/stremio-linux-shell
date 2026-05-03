@@ -17,6 +17,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
+          fetch-depth: 0
           submodules: recursive
 
       - name: Setup Rust
@@ -164,12 +165,17 @@ jobs:
             exit 1
           fi
 
-      - name: Create or Update Release (GitHub auto notes)
+      - name: Generate release notes
+        run: scripts/release-notes.sh release-notes.md
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+
+      - name: Create or Update Release
         uses: softprops/action-gh-release@v2
         with:
           draft: false
           prerelease: false
-          generate_release_notes: true
+          body_path: release-notes.md
           files: |
             Stremio-Enhanced-*.AppImage
         env:
