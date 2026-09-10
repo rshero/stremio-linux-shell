@@ -55,21 +55,56 @@ struct Args {
 fn keycode_to_mpv_key(key_code: KeyCode) -> Option<String> {
     let key_str = match key_code {
         // Letters
-        KeyCode::KeyA => "a", KeyCode::KeyB => "b", KeyCode::KeyC => "c", KeyCode::KeyD => "d",
-        KeyCode::KeyE => "e", KeyCode::KeyF => "f", KeyCode::KeyG => "g", KeyCode::KeyH => "h",
-        KeyCode::KeyI => "i", KeyCode::KeyJ => "j", KeyCode::KeyK => "k", KeyCode::KeyL => "l",
-        KeyCode::KeyM => "m", KeyCode::KeyN => "n", KeyCode::KeyO => "o", KeyCode::KeyP => "p",
-        KeyCode::KeyQ => "q", KeyCode::KeyR => "r", KeyCode::KeyS => "s", KeyCode::KeyT => "t",
-        KeyCode::KeyU => "u", KeyCode::KeyV => "v", KeyCode::KeyW => "w", KeyCode::KeyX => "x",
-        KeyCode::KeyY => "y", KeyCode::KeyZ => "z",
+        KeyCode::KeyA => "a",
+        KeyCode::KeyB => "b",
+        KeyCode::KeyC => "c",
+        KeyCode::KeyD => "d",
+        KeyCode::KeyE => "e",
+        KeyCode::KeyF => "f",
+        KeyCode::KeyG => "g",
+        KeyCode::KeyH => "h",
+        KeyCode::KeyI => "i",
+        KeyCode::KeyJ => "j",
+        KeyCode::KeyK => "k",
+        KeyCode::KeyL => "l",
+        KeyCode::KeyM => "m",
+        KeyCode::KeyN => "n",
+        KeyCode::KeyO => "o",
+        KeyCode::KeyP => "p",
+        KeyCode::KeyQ => "q",
+        KeyCode::KeyR => "r",
+        KeyCode::KeyS => "s",
+        KeyCode::KeyT => "t",
+        KeyCode::KeyU => "u",
+        KeyCode::KeyV => "v",
+        KeyCode::KeyW => "w",
+        KeyCode::KeyX => "x",
+        KeyCode::KeyY => "y",
+        KeyCode::KeyZ => "z",
         // Numbers
-        KeyCode::Digit0 => "0", KeyCode::Digit1 => "1", KeyCode::Digit2 => "2", KeyCode::Digit3 => "3",
-        KeyCode::Digit4 => "4", KeyCode::Digit5 => "5", KeyCode::Digit6 => "6", KeyCode::Digit7 => "7",
-        KeyCode::Digit8 => "8", KeyCode::Digit9 => "9",
+        KeyCode::Digit0 => "0",
+        KeyCode::Digit1 => "1",
+        KeyCode::Digit2 => "2",
+        KeyCode::Digit3 => "3",
+        KeyCode::Digit4 => "4",
+        KeyCode::Digit5 => "5",
+        KeyCode::Digit6 => "6",
+        KeyCode::Digit7 => "7",
+        KeyCode::Digit8 => "8",
+        KeyCode::Digit9 => "9",
         // Function keys
-        KeyCode::F1 => "F1", KeyCode::F2 => "F2", KeyCode::F3 => "F3", KeyCode::F4 => "F4",
-        KeyCode::F5 => "F5", KeyCode::F6 => "F6", KeyCode::F7 => "F7", KeyCode::F8 => "F8",
-        KeyCode::F9 => "F9", KeyCode::F10 => "F10", KeyCode::F11 => "F11", KeyCode::F12 => "F12",
+        KeyCode::F1 => "F1",
+        KeyCode::F2 => "F2",
+        KeyCode::F3 => "F3",
+        KeyCode::F4 => "F4",
+        KeyCode::F5 => "F5",
+        KeyCode::F6 => "F6",
+        KeyCode::F7 => "F7",
+        KeyCode::F8 => "F8",
+        KeyCode::F9 => "F9",
+        KeyCode::F10 => "F10",
+        KeyCode::F11 => "F11",
+        KeyCode::F12 => "F12",
         // Special keys
         KeyCode::Space => "SPACE",
         KeyCode::Enter => "ENTER",
@@ -190,6 +225,7 @@ fn main() -> ExitCode {
     shared::EVENT_LOOP_PROXY.set(event_loop_proxy.clone()).ok();
 
     let mut needs_redraw = false;
+    let mut last_cache_second = None;
 
     loop {
         let timeout = match needs_redraw {
@@ -296,19 +332,24 @@ fn main() -> ExitCode {
                 webview.touch_input(touch);
             }
             AppEvent::KeyboardInput((key_event, modifiers)) => {
-                // Intercept Ctrl+V for clipboard paste from system
-                // CEF in windowless mode doesn't automatically sync with system clipboard
-                if modifiers.control_key() && key_event.state.is_pressed() {
-                    if let PhysicalKey::Code(KeyCode::KeyV) = key_event.physical_key {
-                        webview.paste_from_clipboard();
-                        return; // Don't forward to CEF or webview
+                let key_code = match key_event.physical_key {
+                    PhysicalKey::Code(key_code) => key_code,
+                    _ => {
+                        webview.keyboard_input(key_event, modifiers);
+                        return;
                     }
+                };
+                // Shell-owned shortcuts consume both press and release. Forwarding only the
+                // release to CEF makes web key handlers execute the same action a second time.
+                if modifiers.control_key() && key_code == KeyCode::KeyV {
+                    if key_event.state.is_pressed() {
+                        webview.paste_from_clipboard();
+                    }
+                    return;
                 }
-
-                // Intercept Ctrl+0-6 for Anime4K shader switching
-                if modifiers.control_key() && key_event.state.is_pressed() {
-                    if let PhysicalKey::Code(key_code) = key_event.physical_key {
-                        if let Some((action, _label)) = get_anime4k_shader_command(key_code) {
+                if modifiers.control_key() {
+                    if let Some((action, shader_list)) = get_anime4k_shader_command(key_code) {
+                        if key_event.state.is_pressed() {
                             if action == "clr" {
                                 println!("🎨 [ANIME4K] Clearing all shaders");
                                 player.command(
@@ -316,7 +357,7 @@ fn main() -> ExitCode {
                                     vec![
                                         "glsl-shaders".to_string(),
                                         "clr".to_string(),
-                                        "".to_string(),
+                                        String::new(),
                                     ],
                                 );
                                 player.command(
@@ -324,7 +365,6 @@ fn main() -> ExitCode {
                                     vec!["Shaders cleared".to_string()],
                                 );
                             } else {
-                                let shader_list = _label;
                                 let mode_label = match key_code {
                                     KeyCode::Digit1 => "Anime4K: Mode A (HQ)",
                                     KeyCode::Digit2 => "Anime4K: Mode B (HQ+Denoise)",
@@ -346,81 +386,70 @@ fn main() -> ExitCode {
                                 player
                                     .command("show-text".to_string(), vec![mode_label.to_string()]);
                             }
-                            return; // Don't forward to webview
                         }
+                        return;
                     }
                 }
-
-                // Handle fullscreen toggle (F/F11) directly in the shell during playback
-                // The web UI's keyboard shortcuts may be disabled during playback
-                // Only trigger on plain F/F11 - Shift+F should go to MPV for other bindings
-                if is_playing && key_event.state.is_pressed() && !modifiers.control_key() && !modifiers.alt_key() && !modifiers.shift_key() {
-                    if let PhysicalKey::Code(key_code) = key_event.physical_key {
-                        if matches!(key_code, KeyCode::KeyF | KeyCode::F11) {
-                            app.toggle_fullscreen();
-                            return; // Don't forward to MPV or webview
-                        }
+                if is_playing
+                    && !modifiers.control_key()
+                    && !modifiers.alt_key()
+                    && !modifiers.shift_key()
+                    && matches!(key_code, KeyCode::KeyF | KeyCode::F11)
+                {
+                    if key_event.state.is_pressed() {
+                        app.toggle_fullscreen();
                     }
+                    return;
                 }
-
-                // Track if we forwarded the key to MPV
-                let mut forwarded_to_mpv = false;
-
-                // Forward keypresses to MPV ONLY when video is playing
-                if is_playing && key_event.state.is_pressed() {
-                    if let PhysicalKey::Code(key_code) = key_event.physical_key {
-                        if let Some(mut mpv_key) = keycode_to_mpv_key(key_code) {
-                            // Handle modifiers (MPV format: CTRL+s, Shift+g, etc.)
-                            // For letters with Shift, MPV expects uppercase letter (z -> Z)
-                            // For other keys, use explicit Shift+ prefix
-                            let is_letter = matches!(key_code,
-                                KeyCode::KeyA | KeyCode::KeyB | KeyCode::KeyC | KeyCode::KeyD |
-                                KeyCode::KeyE | KeyCode::KeyF | KeyCode::KeyG | KeyCode::KeyH |
-                                KeyCode::KeyI | KeyCode::KeyJ | KeyCode::KeyK | KeyCode::KeyL |
-                                KeyCode::KeyM | KeyCode::KeyN | KeyCode::KeyO | KeyCode::KeyP |
-                                KeyCode::KeyQ | KeyCode::KeyR | KeyCode::KeyS | KeyCode::KeyT |
-                                KeyCode::KeyU | KeyCode::KeyV | KeyCode::KeyW | KeyCode::KeyX |
-                                KeyCode::KeyY | KeyCode::KeyZ
+                if is_playing {
+                    if let Some(mut mpv_key) = keycode_to_mpv_key(key_code) {
+                        if key_event.state.is_pressed() {
+                            let is_letter = matches!(
+                                key_code,
+                                KeyCode::KeyA
+                                    | KeyCode::KeyB
+                                    | KeyCode::KeyC
+                                    | KeyCode::KeyD
+                                    | KeyCode::KeyE
+                                    | KeyCode::KeyF
+                                    | KeyCode::KeyG
+                                    | KeyCode::KeyH
+                                    | KeyCode::KeyI
+                                    | KeyCode::KeyJ
+                                    | KeyCode::KeyK
+                                    | KeyCode::KeyL
+                                    | KeyCode::KeyM
+                                    | KeyCode::KeyN
+                                    | KeyCode::KeyO
+                                    | KeyCode::KeyP
+                                    | KeyCode::KeyQ
+                                    | KeyCode::KeyR
+                                    | KeyCode::KeyS
+                                    | KeyCode::KeyT
+                                    | KeyCode::KeyU
+                                    | KeyCode::KeyV
+                                    | KeyCode::KeyW
+                                    | KeyCode::KeyX
+                                    | KeyCode::KeyY
+                                    | KeyCode::KeyZ
                             );
-
                             if modifiers.shift_key() && is_letter {
-                                // For letters, Shift means uppercase (z -> Z)
                                 mpv_key = mpv_key.to_uppercase();
                             } else if modifiers.shift_key() {
-                                // For non-letters, use Shift+ prefix
                                 mpv_key = format!("Shift+{}", mpv_key);
                             }
-
                             if modifiers.control_key() {
                                 mpv_key = format!("CTRL+{}", mpv_key);
                             }
                             if modifiers.alt_key() {
                                 mpv_key = format!("ALT+{}", mpv_key);
                             }
-
-                            // Send keypress to MPV (will trigger input.conf bindings)
                             player.command("keypress".to_string(), vec![mpv_key]);
-                            forwarded_to_mpv = true;
-
-                            // Don't forward navigation/editing keys to webview to prevent conflicts
-                            // These keys can cause crashes or unwanted behavior in CEF
-                            let is_navigation_key = matches!(key_code,
-                                KeyCode::Backspace | KeyCode::Delete | KeyCode::Home | KeyCode::End |
-                                KeyCode::PageUp | KeyCode::PageDown | KeyCode::ArrowLeft |
-                                KeyCode::ArrowRight | KeyCode::ArrowUp | KeyCode::ArrowDown
-                            );
-
-                            if is_navigation_key {
-                                return; // Don't forward to webview
-                            }
                         }
+                        return;
                     }
                 }
-
-                // Only forward to webview if we didn't handle it for MPV, or if it's a safe key
-                if !forwarded_to_mpv {
-                    webview.keyboard_input(key_event, modifiers);
-                }
+                webview.keyboard_input(key_event, modifiers);
             }
             AppEvent::FileHover((path, state)) => {
                 webview.file_hover(path, state);
@@ -442,13 +471,6 @@ fn main() -> ExitCode {
                 // Proactively send Init message to tell web UI we're a shell (enables MPV)
                 let init_message = ipc::create_response(IpcEvent::Init(1));
                 webview.post_message(init_message);
-
-                if let Some(deeplink) = &args.open
-                    && deeplink.starts_with(URI_SCHEME)
-                {
-                    let message = ipc::create_response(IpcEvent::OpenMedia(deeplink.to_string()));
-                    webview.post_message(message);
-                }
             }
             WebViewEvent::Paint => {
                 needs_redraw = true;
@@ -467,6 +489,15 @@ fn main() -> ExitCode {
                 IpcEvent::Init(id) => {
                     let message = ipc::create_response(IpcEvent::Init(id));
                     webview.post_message(message);
+                }
+                IpcEvent::AppReady => {
+                    if let Some(deeplink) = &args.open
+                        && deeplink.starts_with(URI_SCHEME)
+                    {
+                        let message =
+                            ipc::create_response(IpcEvent::OpenMedia(deeplink.to_string()));
+                        webview.post_message(message);
+                    }
                 }
                 IpcEvent::Fullscreen(state) => {
                     app.set_fullscreen(state);
@@ -511,8 +542,8 @@ fn main() -> ExitCode {
                                 "thumb".to_string(),
                                 seconds,
                                 x,
-                                adjusted_y.to_string()
-                            ]
+                                adjusted_y.to_string(),
+                            ],
                         );
                     }
                 }
@@ -520,16 +551,15 @@ fn main() -> ExitCode {
                     if config.app.thumbfast.enabled && config.app.thumbfast.height > 0 {
                         player.command(
                             "script-message-to".to_string(),
-                            vec!["thumbfast".to_string(), "clear".to_string()]
+                            vec!["thumbfast".to_string(), "clear".to_string()],
                         );
                     }
                 }
                 // Theme IPC events
                 IpcEvent::ThemeGetSettings => {
                     println!("🎨 [THEME] Getting theme settings");
-                    let message = ipc::create_response(IpcEvent::ThemeSettings(
-                        config.app.theme.url.clone(),
-                    ));
+                    let message =
+                        ipc::create_response(IpcEvent::ThemeSettings(config.app.theme.url.clone()));
                     webview.post_message(message);
                 }
                 IpcEvent::ThemeSetUrl(url) => {
@@ -562,11 +592,13 @@ fn main() -> ExitCode {
 
         player.events(|event| match event {
             PlayerEvent::Start => {
+                last_cache_second = None;
                 is_playing = true;
                 println!("🎬 [PLAYER] Video started - MPV shortcuts enabled");
                 futures::executor::block_on(app.disable_idling());
             }
             PlayerEvent::Stop(error) => {
+                last_cache_second = None;
                 is_playing = false;
                 println!("⏹️  [PLAYER] Video stopped - MPV shortcuts disabled");
                 futures::executor::block_on(app.enable_idling());
@@ -578,8 +610,26 @@ fn main() -> ExitCode {
                 needs_redraw = true;
             }
             PlayerEvent::PropertyChange(property) => {
-                let message = ipc::create_response(IpcEvent::Mpv(IpcEventMpv::Change(property)));
-                webview.post_message(message);
+                let should_forward = if property.name() == "demuxer-cache-time" {
+                    let cache_second = property
+                        .1
+                        .as_ref()
+                        .and_then(|value| value.as_f64())
+                        .map(|value| value.floor() as i64);
+                    let changed = cache_second != last_cache_second;
+                    if changed {
+                        last_cache_second = cache_second;
+                    }
+                    changed
+                } else {
+                    true
+                };
+
+                if should_forward {
+                    let message =
+                        ipc::create_response(IpcEvent::Mpv(IpcEventMpv::Change(property)));
+                    webview.post_message(message);
+                }
             }
         });
     }

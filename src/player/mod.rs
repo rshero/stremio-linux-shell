@@ -5,7 +5,9 @@ use std::{env, ffi::CString, os::raw::c_void, rc::Rc, thread, time::Duration};
 
 use crate::config::PlayerConfig;
 use config::MpvConfig;
-use constants::{BOOL_PROPERTIES, FLOAT_PROPERTIES, STRING_PROPERTIES};
+use constants::{
+    BOOL_PROPERTIES, FLOAT_PROPERTIES, INT_PROPERTIES, NODE_PROPERTIES, STRING_PROPERTIES,
+};
 use crossbeam_channel::{Receiver, Sender, unbounded};
 use glutin::{display::Display, prelude::GlDisplay};
 use itertools::Itertools;
@@ -13,6 +15,7 @@ use libc::{LC_NUMERIC, setlocale};
 use libmpv2::{
     Format, Mpv,
     events::{Event, EventContext, PropertyData},
+    mpv_node::MpvNode,
     render::{OpenGLInitParams, RenderContext, RenderParam, RenderParamApiType},
 };
 use rust_i18n::t;
@@ -25,6 +28,7 @@ pub type GLContext = Rc<Display>;
 #[derive(Debug)]
 pub enum MpvPropertyValue {
     Float(f64),
+    Int(i64),
     Bool(bool),
     String(String),
 }
@@ -36,6 +40,7 @@ impl Serialize for MpvPropertyValue {
     {
         match self {
             MpvPropertyValue::Float(value) => serializer.serialize_f64(*value),
+            MpvPropertyValue::Int(value) => serializer.serialize_i64(*value),
             MpvPropertyValue::Bool(value) => serializer.serialize_bool(*value),
             MpvPropertyValue::String(value) => {
                 if let Ok(json_value) = serde_json::from_str::<Value>(value) {
@@ -45,6 +50,22 @@ impl Serialize for MpvPropertyValue {
                 }
             }
         }
+    }
+}
+
+fn node_to_json(node: MpvNode) -> Value {
+    match node {
+        MpvNode::String(value) => Value::String(value),
+        MpvNode::Flag(value) => Value::Bool(value),
+        MpvNode::Int64(value) => Value::Number(value.into()),
+        MpvNode::Double(value) => Number::from_f64(value).map_or(Value::Null, Value::Number),
+        MpvNode::ArrayIter(values) => Value::Array(values.map(node_to_json).collect()),
+        MpvNode::MapIter(values) => Value::Object(
+            values
+                .map(|(key, value)| (key, node_to_json(value)))
+                .collect(),
+        ),
+        MpvNode::None => Value::Null,
     }
 }
 
@@ -62,6 +83,12 @@ impl MpvProperty {
                 return serde_json::from_value::<f64>(value)
                     .map(MpvPropertyValue::Float)
                     .map_err(|_| "Failed to get f64 from Value");
+            }
+
+            if INT_PROPERTIES.contains(&self.name()) {
+                return serde_json::from_value::<i64>(value)
+                    .map(MpvPropertyValue::Int)
+                    .map_err(|_| "Failed to get i64 from Value");
             }
 
             if BOOL_PROPERTIES.contains(&self.name()) {
@@ -91,6 +118,8 @@ impl Serialize for MpvProperty {
 
         if let Ok(value) = self.value() {
             state.serialize_field("data", &value)?;
+        } else if let Some(value) = &self.1 {
+            state.serialize_field("data", value)?;
         }
 
         state.end()
@@ -126,11 +155,17 @@ impl<'a> TryFrom<Event<'a>> for PlayerEvent {
                         name.to_owned(),
                         Some(Value::Number(Number::from_f64(value).unwrap())),
                     ),
+                    PropertyData::Int64(value) => {
+                        MpvProperty(name.to_owned(), Some(Value::Number(Number::from(value))))
+                    }
                     PropertyData::Flag(value) => {
                         MpvProperty(name.to_owned(), Some(Value::Bool(value)))
                     }
                     PropertyData::Str(value) => {
                         MpvProperty(name.to_owned(), Some(Value::String(value.to_owned())))
+                    }
+                    PropertyData::Node(value) => {
+                        MpvProperty(name.to_owned(), Some(node_to_json(value)))
                     }
                     _ => return Err("Property not supported"),
                 };
@@ -166,10 +201,9 @@ impl Player {
             mpv_config.config_dir_str()
         );
 
-        let log = env::var("RUST_LOG");
-        let msg_level = match log {
-            Ok(scope) => &format!("all={},cplayer=v,lua=v", scope.as_str()),
-            _ => "cplayer=v,lua=v",
+        let msg_level = match env::var("RUST_LOG") {
+            Ok(scope) => format!("all={},cplayer=v,lua=v", scope),
+            Err(_) => "all=warn".to_owned(),
         };
 
         let config_dir = mpv_config.config_dir_str();
@@ -184,13 +218,13 @@ impl Player {
                 setlocale(LC_NUMERIC, c"C".as_ptr());
             }
 
-            let msg = msg_level;
+            let msg = msg_level.clone();
             let dir = config_dir.clone();
             match Mpv::with_initializer(move |init| {
                 init.set_property("vo", "libmpv")?;
                 init.set_property("video-timing-offset", "0")?;
                 init.set_property("terminal", "yes")?;
-                init.set_property("msg-level", msg)?;
+                init.set_property("msg-level", msg.as_str())?;
                 // Enable config file loading from custom directory
                 init.set_property("config-dir", dir.as_str())?;
                 init.set_property("config", "yes")?;
@@ -282,22 +316,19 @@ impl Player {
         }
     }
 
-    pub fn events<T: FnMut(PlayerEvent)>(&mut self, handler: T) {
-        self.receiver.try_iter().for_each(handler);
+    pub fn events<T: FnMut(PlayerEvent)>(&mut self, mut handler: T) {
+        self.receiver.try_iter().for_each(&mut handler);
 
-        let sender = self.sender.clone();
-        if let Some(result) = self.event_context.wait_event(0.0) {
+        while let Some(result) = self.event_context.wait_event(0.0) {
             match result {
                 Ok(event) => {
                     if let Ok(player_event) = PlayerEvent::try_from(event) {
-                        sender.send(player_event).ok();
+                        handler(player_event);
                     }
                 }
-                Err(e) => {
-                    eprintln!("Mpv error: {e}")
-                }
+                Err(e) => eprintln!("Mpv error: {e}"),
             }
-        };
+        }
     }
 
     pub fn command(&self, name: String, args: Vec<String>) {
@@ -310,8 +341,10 @@ impl Player {
     pub fn observe_property(&self, name: String) {
         let format = match name.as_str() {
             name if FLOAT_PROPERTIES.contains(&name) => Some(Format::Double),
+            name if INT_PROPERTIES.contains(&name) => Some(Format::Int64),
             name if BOOL_PROPERTIES.contains(&name) => Some(Format::Flag),
             name if STRING_PROPERTIES.contains(&name) => Some(Format::String),
+            name if NODE_PROPERTIES.contains(&name) => Some(Format::Node),
             _ => None,
         };
 
@@ -326,6 +359,13 @@ impl Player {
         match property.name() {
             name if FLOAT_PROPERTIES.contains(&name) => {
                 if let Ok(MpvPropertyValue::Float(value)) = property.value()
+                    && let Err(e) = self.mpv.set_property(name, value)
+                {
+                    error!("Failed to set property {name}: {e}");
+                }
+            }
+            name if INT_PROPERTIES.contains(&name) => {
+                if let Ok(MpvPropertyValue::Int(value)) = property.value()
                     && let Err(e) = self.mpv.set_property(name, value)
                 {
                     error!("Failed to set property {name}: {e}");
@@ -353,5 +393,37 @@ impl Player {
 impl Drop for Player {
     fn drop(&mut self) {
         self.render_context.take();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn serializes_node_property_data_for_web_player() {
+        let property = MpvProperty(
+            "video-params".to_owned(),
+            Some(json!({ "w": 1920, "h": 1080 })),
+        );
+
+        assert_eq!(
+            serde_json::to_value(property).unwrap(),
+            json!({
+                "name": "video-params",
+                "data": { "w": 1920, "h": 1080 },
+            }),
+        );
+    }
+
+    #[test]
+    fn accepts_paused_for_cache_as_boolean() {
+        let property = MpvProperty("paused-for-cache".to_owned(), Some(json!(false)));
+
+        assert!(matches!(
+            property.value(),
+            Ok(MpvPropertyValue::Bool(false))
+        ));
     }
 }

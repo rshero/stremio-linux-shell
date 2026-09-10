@@ -126,7 +126,7 @@ impl App {
 
         // Get window config with validation
         let window_config = &self.config.window;
-        
+
         // Validate window config - fall back to defaults if invalid
         let (x, y, width, height, maximized) = Self::validate_window_config(
             window_config.x,
@@ -172,12 +172,12 @@ impl App {
         });
 
         self.window = window;
-        
+
         // Update maximized state after window creation (might have changed due to WM)
         if let Some(window) = self.window.as_ref() {
             self.maximized = window.is_maximized();
         }
-        
+
         self.sender.send(AppEvent::Visibility(true)).ok();
 
         shared::create_gl(surface, context);
@@ -200,7 +200,7 @@ impl App {
         // Validate values
         let valid_position = x >= 0 && y >= 0;
         let valid_size = width >= 900 && height >= 600;
-        
+
         // Check reasonable bounds - window should not be larger than primary monitor
         let mut reasonable_bounds = true;
         if let Some(monitor) = event_loop.primary_monitor() {
@@ -214,7 +214,13 @@ impl App {
             (x, y, width, height, maximized)
         } else {
             // Return defaults from constants - will be centered
-            (-1, -1, width.max(900).min(WINDOW_SIZE.0 as u32), height.max(600).min(WINDOW_SIZE.1 as u32), maximized)
+            (
+                -1,
+                -1,
+                width.max(900).min(WINDOW_SIZE.0 as u32),
+                height.max(600).min(WINDOW_SIZE.1 as u32),
+                maximized,
+            )
         }
     }
 

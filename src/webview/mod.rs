@@ -325,11 +325,7 @@ impl WebView {
 
         // Try qdbus (KDE Plasma 5)
         if let Ok(output) = Command::new("qdbus")
-            .args(&[
-                "org.kde.klipper",
-                "/klipper",
-                "getClipboardContents",
-            ])
+            .args(&["org.kde.klipper", "/klipper", "getClipboardContents"])
             .output()
         {
             if output.status.success() {
@@ -347,14 +343,13 @@ impl WebView {
     /// This is needed because CEF in windowless mode doesn't automatically sync with system clipboard
     pub fn paste_from_clipboard(&self) {
         // Try multiple clipboard sources in order of priority
-        let clipboard_text = Self::try_klipper_clipboard()
-            .or_else(|| {
-                // Fall back to arboard for non-KDE environments
-                match Clipboard::new() {
-                    Ok(mut clipboard) => clipboard.get_text().ok(),
-                    Err(_) => None,
-                }
-            });
+        let clipboard_text = Self::try_klipper_clipboard().or_else(|| {
+            // Fall back to arboard for non-KDE environments
+            match Clipboard::new() {
+                Ok(mut clipboard) => clipboard.get_text().ok(),
+                Err(_) => None,
+            }
+        });
 
         if let Some(text) = clipboard_text {
             if let Some(main_frame) = self.main_frame() {

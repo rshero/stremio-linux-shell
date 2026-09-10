@@ -11,47 +11,43 @@ pub enum GpuVendor {
 
 /// Detects the GPU vendor from system information
 pub fn detect_gpu_vendor() -> GpuVendor {
-    // Try to detect GPU using lspci
-    if let Ok(output) = Command::new("lspci").output() {
-        let output_str = String::from_utf8_lossy(&output.stdout).to_lowercase();
+    // Sysfs avoids spawning `lspci` in the browser, renderer, and GPU subprocesses.
+    if let Ok(entries) = std::fs::read_dir("/sys/class/drm") {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            let is_card = path
+                .file_name()
+                .and_then(|name| name.to_str())
+                .is_some_and(|name| name.starts_with("card") && !name.contains('-'));
+            if !is_card {
+                continue;
+            }
 
-        // Look for GPU entries (VGA compatible controller or 3D controller)
-        for line in output_str.lines() {
-            if line.contains("vga") || line.contains("3d") || line.contains("display") {
-                info!("GPU detected: {}", line);
-
-                if line.contains("intel") {
-                    info!("Intel GPU detected");
-                    return GpuVendor::Intel;
-                } else if line.contains("nvidia") {
-                    info!("NVIDIA GPU detected");
-                    return GpuVendor::Nvidia;
-                } else if line.contains("amd") || line.contains("ati") {
-                    info!("AMD GPU detected");
-                    return GpuVendor::Amd;
+            if let Ok(vendor) = std::fs::read_to_string(path.join("device/vendor")) {
+                let vendor = vendor.trim();
+                info!("GPU vendor ID from sysfs: {}", vendor);
+                match vendor {
+                    "0x8086" => return GpuVendor::Intel,
+                    "0x10de" => return GpuVendor::Nvidia,
+                    "0x1002" => return GpuVendor::Amd,
+                    _ => continue,
                 }
             }
         }
     }
 
-    // Fallback: Try reading from /sys/class/drm
-    if let Ok(entries) = std::fs::read_dir("/sys/class/drm") {
-        for entry in entries.flatten() {
-            let path = entry.path();
-            if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
-                if name.starts_with("card") && !name.contains('-') {
-                    let vendor_path = path.join("device/vendor");
-                    if let Ok(vendor) = std::fs::read_to_string(vendor_path) {
-                        let vendor = vendor.trim();
-                        info!("GPU vendor ID from sysfs: {}", vendor);
-
-                        return match vendor {
-                            "0x8086" => GpuVendor::Intel,
-                            "0x10de" => GpuVendor::Nvidia,
-                            "0x1002" => GpuVendor::Amd,
-                            _ => GpuVendor::Unknown,
-                        };
-                    }
+    // Retain lspci as a fallback for systems without DRM sysfs entries.
+    if let Ok(output) = Command::new("lspci").output() {
+        let output_str = String::from_utf8_lossy(&output.stdout).to_lowercase();
+        for line in output_str.lines() {
+            if line.contains("vga") || line.contains("3d") || line.contains("display") {
+                info!("GPU detected: {}", line);
+                if line.contains("intel") {
+                    return GpuVendor::Intel;
+                } else if line.contains("nvidia") {
+                    return GpuVendor::Nvidia;
+                } else if line.contains("amd") || line.contains("ati") {
+                    return GpuVendor::Amd;
                 }
             }
         }
@@ -99,10 +95,7 @@ pub fn get_gpu_switches(vendor: GpuVendor) -> Vec<&'static str> {
         }
         GpuVendor::Unknown => {
             info!("Unknown GPU, using safe defaults");
-            switches.extend_from_slice(&[
-                "disable-cuda",
-                "enable-gpu-rasterization",
-            ]);
+            switches.extend_from_slice(&["disable-cuda", "enable-gpu-rasterization"]);
         }
     }
 
