@@ -18,6 +18,7 @@ pub enum IpcEventMpv {
 #[derive(Deserialize, Debug)]
 pub enum IpcEvent {
     Init(u64),
+    AppReady,
     Quit,
     Fullscreen(bool),
     Minimized(bool),
@@ -27,7 +28,7 @@ pub enum IpcEvent {
     Mpv(IpcEventMpv),
     DiscordPresence(Vec<String>),
     DiscordToggle(bool),
-    SeekHover(String, String, i64),  // (seconds, x, y)
+    SeekHover(String, String, i64), // (seconds, x, y)
     SeekLeave,
     // Theme IPC events
     ThemeGetSettings,
@@ -37,7 +38,7 @@ pub enum IpcEvent {
     ThemeWriteFile(String, String),
     ThemeListFiles,
     // Response events (shell -> web)
-    ThemeSettings(Option<String>),  // url only (css removed)
+    ThemeSettings(Option<String>), // url only (css removed)
     ThemeFileContent(Option<String>),
     ThemeFileList(Vec<String>),
     ThemeWriteResult(bool),
@@ -70,7 +71,7 @@ impl TryFrom<IpcMessageRequest> for IpcEvent {
 
                     match data {
                         Some(data) => match name {
-                            "app-ready" => Ok(IpcEvent::Init(value.id)),  // Handle app-ready event
+                            "app-ready" => Ok(IpcEvent::Init(value.id)), // Handle app-ready event
                             "win-set-visibility" => {
                                 let data: IpcMessageRequestWinSetVisilibty =
                                     serde_json::from_value(data)
@@ -117,17 +118,20 @@ impl TryFrom<IpcMessageRequest> for IpcEvent {
                                 let hover_args: Vec<Value> = serde_json::from_value(data)
                                     .expect("Invalid seek-hover arguments");
 
-                                let seconds = hover_args.get(0)
+                                let seconds = hover_args
+                                    .get(0)
                                     .and_then(Value::as_str)
                                     .ok_or("Invalid seek-hover seconds")?
                                     .to_string();
 
-                                let x = hover_args.get(1)
+                                let x = hover_args
+                                    .get(1)
                                     .and_then(Value::as_str)
                                     .ok_or("Invalid seek-hover x")?
                                     .to_string();
 
-                                let y = hover_args.get(2)
+                                let y = hover_args
+                                    .get(2)
                                     .and_then(Value::as_str)
                                     .ok_or("Invalid seek-hover y")?
                                     .parse::<i64>()
@@ -165,14 +169,21 @@ impl TryFrom<IpcMessageRequest> for IpcEvent {
                                 let content = args.get(1).cloned().ok_or("Missing content")?;
                                 Ok(IpcEvent::ThemeWriteFile(filename, content))
                             }
-                            _ => Err(format!("Unknown method (type=6, with_data): '{}' | full_args: {:?}", name, args)),
+                            _ => Err(format!(
+                                "Unknown method (type=6, with_data): '{}' | full_args: {:?}",
+                                name, args
+                            )),
                         },
                         None => match name {
+                            "app-ready" => Ok(IpcEvent::AppReady),
                             "quit" => Ok(IpcEvent::Quit),
                             "seek-leave" => Ok(IpcEvent::SeekLeave),
                             "theme-get-settings" => Ok(IpcEvent::ThemeGetSettings),
                             "theme-list-files" => Ok(IpcEvent::ThemeListFiles),
-                            _ => Err(format!("Unknown method (type=6, no_data): '{}' | full_args: {:?}", name, args)),
+                            _ => Err(format!(
+                                "Unknown method (type=6, no_data): '{}' | full_args: {:?}",
+                                name, args
+                            )),
                         },
                     }
                 }
@@ -196,7 +207,10 @@ impl TryFrom<IpcMessageRequest> for IpcEvent {
                             let enabled = args.get(1).and_then(Value::as_bool).unwrap_or(false);
                             Ok(IpcEvent::DiscordToggle(enabled))
                         }
-                        _ => Err(format!("Unknown method (type=7): '{}' | full_args: {:?}", name, args)),
+                        _ => Err(format!(
+                            "Unknown method (type=7): '{}' | full_args: {:?}",
+                            name, args
+                        )),
                     }
                 }
                 None => Err("Missing args".to_string()),
@@ -240,7 +254,13 @@ impl TryFrom<IpcEvent> for IpcMessageResponse {
                 args: None,
                 data: Some(json!({
                     "transport": {
-                        "properties": [[], ["", "shellVersion", "", VERSION]],
+                        "properties": [
+                            [],
+                            ["", "shellVersion", "", VERSION],
+                            ["", "gpuVideoProcessing", "", "false"],
+                            ["", "nativeAssSubtitles", "", "true"],
+                            ["", "mediaSession", "", "false"]
+                        ],
                         "signals": [],
                         "methods": [["onEvent"]]
                     }
@@ -333,30 +353,21 @@ impl TryFrom<IpcEvent> for IpcMessageResponse {
                 r#type: 1,
                 object: TRANSPORT_NAME.to_owned(),
                 data: None,
-                args: Some(json!([
-                    "theme-file-content",
-                    content
-                ])),
+                args: Some(json!(["theme-file-content", content])),
             }),
             IpcEvent::ThemeFileList(files) => Ok(IpcMessageResponse {
                 id: 1,
                 r#type: 1,
                 object: TRANSPORT_NAME.to_owned(),
                 data: None,
-                args: Some(json!([
-                    "theme-file-list",
-                    files
-                ])),
+                args: Some(json!(["theme-file-list", files])),
             }),
             IpcEvent::ThemeWriteResult(success) => Ok(IpcMessageResponse {
                 id: 1,
                 r#type: 1,
                 object: TRANSPORT_NAME.to_owned(),
                 data: None,
-                args: Some(json!([
-                    "theme-write-result",
-                    success
-                ])),
+                args: Some(json!(["theme-write-result", success])),
             }),
             _ => Err("Failed to convert IpcEvent to IpcMessageResponse"),
         }

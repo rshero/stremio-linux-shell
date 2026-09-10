@@ -1,10 +1,11 @@
 use std::{
     io::{BufRead, BufReader},
+    os::unix::process::CommandExt,
     process::{self, Child, Command},
     thread,
 };
 
-use anyhow::{Context, Ok};
+use anyhow::Context;
 use tracing::debug;
 
 use crate::config::ServerConfig;
@@ -23,19 +24,31 @@ impl Server {
     }
 
     pub fn start(&mut self, dev: bool) -> anyhow::Result<()> {
-        let mut child = Command::new("node")
+        let mut command = Command::new("node");
+        command
             .env("NO_CORS", (dev as i32).to_string())
             .arg(self.config.file.as_os_str())
             .stdout(process::Stdio::piped())
-            .spawn()
-            .context("Failed to start server")?;
+            .process_group(0);
+
+        unsafe {
+            command.pre_exec(|| {
+                if libc::prctl(libc::PR_SET_PDEATHSIG, libc::SIGTERM) == -1 {
+                    return Err(std::io::Error::last_os_error());
+                }
+
+                Ok(())
+            });
+        }
+
+        let mut child = command.spawn().context("Failed to start server")?;
 
         if let Some(stdout) = child.stdout.take() {
             let reader = BufReader::new(stdout);
             let mut lines = reader.lines();
 
             thread::spawn(move || {
-                while let Some(Result::Ok(line)) = lines.next() {
+                while let Some(Ok(line)) = lines.next() {
                     debug!(target: "server", "{}", line);
                 }
             });

@@ -6,16 +6,24 @@ pub const FLOAT_PROPERTIES: &[&str] = &[
     "sub-pos",
     "sub-scale",
     "sub-delay",
+    "panscan",
+    "demuxer-cache-time",
 ];
+
+pub const INT_PROPERTIES: &[&str] = &["vid"];
 
 pub const BOOL_PROPERTIES: &[&str] = &[
     "pause",
     "buffering",
     "seeking",
     "osc",
+    "paused-for-cache",
     "input-default-bindings",
     "input-vo-keyboard",
+    "keepaspect",
 ];
+
+pub const NODE_PROPERTIES: &[&str] = &["metadata", "track-list", "video-params"];
 
 pub const STRING_PROPERTIES: &[&str] = &[
     "path",
@@ -23,7 +31,6 @@ pub const STRING_PROPERTIES: &[&str] = &[
     "ffmpeg-version",
     "hwdec",
     "vo",
-    "track-list",
     "sub-color",
     "sub-back-color",
     "sub-border-color",
@@ -32,4 +39,5 @@ pub const STRING_PROPERTIES: &[&str] = &[
     "mute",
     "media-title",
     "force-media-title",
+    "sub-ass-override",
 ];

@@ -77,8 +77,9 @@ impl Renderer {
             self.height = height;
 
             gl::Viewport(0, 0, width, height);
-
+            utils::resize_texture(self.front_texture, width, height);
             utils::resize_texture(self.back_texture, width, height);
+            utils::resize_pbo(self.pbo, width, height);
         }
     }
 
@@ -94,9 +95,6 @@ impl Renderer {
         buffer: *const u8,
         full_width: i32,
     ) {
-        utils::resize_pbo(self.pbo, self.width, self.height);
-        utils::resize_texture(self.front_texture, self.width, self.height);
-
         unsafe {
             gl::BindBuffer(gl::PIXEL_UNPACK_BUFFER, self.pbo);
 
@@ -137,6 +135,7 @@ impl Renderer {
 
     pub fn draw(&self) {
         unsafe {
+            gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
             gl::Enable(gl::BLEND);
             gl::BlendFunc(gl::ONE, gl::ONE_MINUS_SRC_ALPHA);
             gl::BlendEquation(gl::FUNC_ADD);
